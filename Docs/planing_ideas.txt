@@ -1,0 +1,58 @@
+I want to explain this, what parts can i animate?
+ source code → tokens → AST → result
+
+Lexer: characters being consumed one-by-one, grouped into tokens (color-code by token type)
+Indentation tracking: the indent_stack growing/shrinking as INDENT/DEDENT tokens get emitted — this is the trickiest part to explain in words, great for animation
+Parser: building the AST tree top-down, recursive descent "diving in" then "popping back up" through precedence levels
+Operator precedence climbing: showing why 2 + 3 * 4 builds BinOp(+, 2, BinOp(*, 3, 4)) not the other way
+Tree-walk interpreter: walking the AST node-by-node, with a call stack of Environment frames appearing/disappearing for function calls
+Scope chain lookup: a variable lookup walking outward through parent environments until found (or NameError)
+Recursion: each recursive call pushing a new Environment frame, return values bubbling back up
+
+
+how to improve this index, maybe add data structures?
+
+relp 
+tokeinzer
+peg parser
+ast nodes
+interpreter
+builtins
+errores that need to be handled
+data structures 
+python native library and os api
+
+
+what is a good example to follow al the proces of build a python interpreter
+
+Fibonnasy recursive and iterative because it have
+
+variables
+operators
+controls structures 
+functions
+
+def fibonacci_recursive(n):
+    if n <= 1:
+        return n
+    return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2)
+
+print(fibonacci_recursive(5))  # 5
+
+def fibonacci_iterative(n):
+    if n <= 1:
+        return n
+
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+
+    return b
+
+print(fibonacci_iterative(5))  # 5
+
+
+how to integrate?
+how to integrate llm for questions 
+https://pythontutor.com/visualize.html
+how to use analogies here
