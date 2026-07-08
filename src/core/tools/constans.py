@@ -1,6 +1,8 @@
-CODESNIPPETS_DIR = Path(__file__).parent / "codesnippets"
-SUPPORTED_CODE_LANGUAGES = ["python", "c++", "lisp"]  # add java/rust/go as files land
-DEFAULT_CODE_LANGUAGE = "python"
+from core.tools.tools import read_folders, read_json_files
 
-CODE_LANGUAGE_LABELS = {"python": "Python", "c++": "C++", "lisp": "Lisp"}
-# languages an pl will be taked reading folders and cleaning pl = listdir(codesnippets) and langauges = listdir(LANGUAGES)
+PROGRAMING_LANGUAGES_FOLDER = "core/codesnippets/"
+LANGUAGES_FOLDER = "core/content/"
+SUPPORTED_PROGRAMING_LANGUAGES = read_folders(PROGRAMING_LANGUAGES_FOLDER)
+SUPPORTED_LANGUAGES = read_json_files(LANGUAGES_FOLDER)
+DEFAULT_PROGRAMING_LANGUAGE = "python"
+DEFAULT_LANGUAGE = "en"

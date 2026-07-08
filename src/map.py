@@ -1,6 +1,10 @@
-def main():
-    print("Hello from src!")
+import uvicorn
 
+from core.main import app
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=9602,
+    )

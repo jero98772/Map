@@ -1,1 +1,14 @@
-article
+{% extends "base.html" %}
+{% block content %}
+
+<section>
+    <h2>{{ content.print.heading }}</h2>
+    <p>{{ content.print.description }}</p>
+    <nav>
+        {% for cl in code_languages %}
+        <a href="/{{ lang }}/make-a-python/?prog_lang={{ cl.replace('+', '%2B') }}">{{ cl }}</a>
+        {% endfor %}
+    </nav>
+    <pre>{{ snippet }}</pre>
+</section>
+{% endblock %}
