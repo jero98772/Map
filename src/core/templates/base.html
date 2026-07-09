@@ -1,25 +1,68 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}">
+<html lang="{{ lang | default('en') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ url_for('static', path='img/favicon.png') }}">
-    <title>{% block title %}{{ content.title }}{% endblock %}</title>
+    <title>{% block title %}{{ content.title if content is defined and content else 'Make a Python' }}{% endblock %}</title>
+
+    <!-- Loaded without defer: sets data-theme on <html> before first paint -->
+    <script src="{{ url_for('static', path='js/base.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}">
 </head>
 <body>
+    {% set cur_lang = lang | default('en') %}
+    {% set cur_prog = prog_lang | default('') %}
+    {% set langs = languages | default([]) %}
+    {% set clangs = code_languages | default([]) %}
+
     <header>
-        <h1>{{ content.title }}</h1>
-        <nav>
-            {% for l in languages %}
-            <a href="/{{ l }}/make-a-python/?prog_lang={{ prog_lang.replace('+', '%2B') }}">{{ l }}</a>
-            {% endfor %}
+
+        <nav class="navbar" aria-label="Site options">
+            <div class="brand">
+                <img class="logo" src="{{ url_for('static', path='img/logo.png') }}" alt="Make a Python logo">
+                <h1>{{ content.title if content is defined and content else 'Make a Python' }}</h1>
+            </div>
+            <div class="nav-links" id="nav-links">
+                <div class="nav-group">
+                    <label for="lang-select">Language</label>
+                    <select id="lang-select" aria-label="Change page language" onchange="location.href=this.value">
+                        {% for l in langs %}
+                        <option value="/{{ l }}/make-a-python/?prog_lang={{ cur_prog.replace('+', '%2B') }}"
+                                {% if l == cur_lang %}selected{% endif %}>
+                            {{ l | upper }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="nav-group">
+                    <label for="prog-lang-select">Programming language</label>
+                    <select id="prog-lang-select" aria-label="Change programming language" onchange="location.href=this.value">
+                        {% for cl in clangs %}
+                        <option value="/{{ cur_lang }}/make-a-python/?prog_lang={{ cl.replace('+', '%2B') }}"
+                                {% if cl == cur_prog %}selected{% endif %}>
+                            {{ cl }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <button id="menu-toggle" class="menu-toggle" type="button"
+                        aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">☰</button>
+                <button id="theme-toggle" type="button" aria-label="Toggle light and dark mode">🌙</button>
+            </div>
         </nav>
         <hr>
     </header>
+
     <main>
         {% block content %}
         {% endblock %}
     </main>
+
     <footer>
         <hr>
         <p>© 2026 Make a python</p>

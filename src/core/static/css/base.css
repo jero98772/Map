@@ -1,0 +1,187 @@
+:root {
+    /* Navbar palette - stays constant regardless of page theme */
+    --navy-900: #071633;
+    --navy-800: #0d2456;
+    --navy-700: #16357a;
+    --blue-clear: #7fd1ff;
+    --blue-bright: #d3f1ff;
+
+    /* Page theme palette */
+    --bg-dark: #0b1220;
+    --text-dark: #e6edf5;
+    --bg-light: #f5f8fc;
+    --text-light: #10213f;
+    --border-dark: #1b2c52;
+    --border-light: #d7e3f2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-dark);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+html[data-theme="light"] body {
+    background: var(--bg-light);
+    color: var(--text-light);
+}
+
+header { padding-bottom: 0.5rem; }
+
+/* --- Brand (logo + title) --- */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem 0.75rem;
+    color: var(--blue-bright);
+}
+.brand .logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    border-radius: 0.6rem;
+}
+
+
+
+.brand h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    color: inherit;
+}
+
+/* --- Navbar --- */
+.navbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    background: var(--navy-900);
+    margin: 0 1.25rem;
+    padding: 0.6rem 1rem;
+    border-radius: 0.6rem;
+    position: relative;
+}
+
+.nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+}
+
+.nav-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.nav-group label {
+    color: var(--blue-clear);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.navbar select {
+    background: var(--navy-800);
+    color: var(--blue-bright);
+    border: 1px solid var(--navy-700);
+    border-radius: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.navbar select:hover,
+.navbar select:focus-visible {
+    border-color: var(--blue-clear);
+    outline: 2px solid var(--blue-clear);
+    outline-offset: 1px;
+}
+
+.navbar select option {
+    background: var(--navy-900);
+    color: var(--blue-bright);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#theme-toggle,
+.menu-toggle {
+    background: var(--navy-800);
+    color: var(--blue-clear);
+    border: 1px solid var(--navy-700);
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+#theme-toggle:hover,
+#theme-toggle:focus-visible,
+.menu-toggle:hover,
+.menu-toggle:focus-visible {
+    border-color: var(--blue-clear);
+    outline: 2px solid var(--blue-clear);
+    outline-offset: 1px;
+}
+
+/* Hamburger hidden on desktop; shown only under the breakpoint below */
+.menu-toggle { display: none; }
+
+main { padding: 1.25rem 1.5rem; }
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-dark);
+}
+html[data-theme="light"] hr {
+    border-top: 1px solid var(--border-light);
+}
+
+footer {
+    padding: 0.5rem 1.5rem 1.5rem;
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+/* --- Responsive --- */
+@media (max-width: 700px) {
+    .menu-toggle { display: inline-flex; }
+
+    .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        margin-top: 0.75rem;
+    }
+
+    .navbar.nav-open .nav-links { display: flex; }
+
+    .nav-group { flex-direction: column; align-items: stretch; }
+    .navbar select { width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .brand { padding: 1rem 1rem 0.5rem; }
+    .brand h1 { font-size: 1.3rem; }
+    .brand .logo { width: 2.1rem; height: 2.1rem; }
+    .navbar { margin: 0 1rem; }
+    main { padding: 1rem; }
+}
