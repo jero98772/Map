@@ -2,7 +2,7 @@
 PEG Parser By Hand — Manim animations
 ======================================
 
-Two scenes:
+Three scenes:
 
   PEGTrace      - traces parsing "3+4*2" against:
                     Expr   <- Term (('+' / '-') Term)*
@@ -16,12 +16,26 @@ Two scenes:
                   to match 'b', fails, restores the cursor to where it was
                   saved, then retries the second alternative from scratch.
 
+  PEGParseTree  - builds an actual parse tree, node by node, while parsing
+                  "print(3+4*2)" against:
+                    Call   <- Ident '(' Expr ')'
+                    Expr   <- Term (('+' / '-') Term)*
+                    Term   <- Factor (('*' / '/') Factor)*
+                    Factor <- Number / '(' Expr ')'
+                    Ident  <- [a-zA-Z]+
+                    Number <- [0-9]+
+                  Each tree node appears the instant its rule is called /
+                  matches, wired to its parent with an edge, in lock-step
+                  with the cursor consuming the input above it.
+
 Render with (ManimCE):
     pip install manim --break-system-packages
     manim -pql peg_parser_manim.py PEGTrace
     manim -pql peg_parser_manim.py PEGBacktrack
+    manim -pql peg_parser_manim.py PEGParseTree
 
-    (-pql = preview, quality low/fast. Use -pqh for a high quality render.)
+    (-pql = preview, quality low/fast. Use -pqh for a high quality render.
+     Use "manim -qh -a peg_parser_manim.py" to render every scene at once.)
 """
 
 from manim import *
@@ -93,7 +107,7 @@ class PEGTrace(Scene):
             )
             .arrange(DOWN, aligned_edge=LEFT)
             .to_corner(UL)
-            .shift(DOWN * 0.6)
+            .shift(DOWN * 0.9)
         )
         self.play(FadeIn(grammar))
 
@@ -104,7 +118,7 @@ class PEGTrace(Scene):
         cursor.move_to(boundary_point(boxes, 0))
         self.play(FadeIn(cursor))
 
-        caption = Text("", font_size=26).to_edge(DOWN, buff=0.9)
+        caption = Text("", font_size=26).to_edge(DOWN, buff=1.6)
         self.add(caption)
 
         stack_label = Text("call stack", font_size=20, color=GREY)
@@ -185,7 +199,7 @@ class PEGTrace(Scene):
         pop()  # Expr -> 11
 
         result = Text("result = 11", font_size=36, color=YELLOW)
-        result.next_to(chargroup, DOWN, buff=3.5)
+        result.next_to(chargroup, DOWN, buff=2.4)
         self.play(Write(result))
         self.wait(2)
 
@@ -209,7 +223,7 @@ class PEGBacktrack(Scene):
         cursor.move_to(boundary_point(boxes, 0))
         self.play(FadeIn(cursor))
 
-        caption = Text("", font_size=26).to_edge(DOWN, buff=0.9)
+        caption = Text("", font_size=26).to_edge(DOWN, buff=2.0)
         self.add(caption)
 
         pos_label = Text("pos = 0", font_size=22, color=GREY)
@@ -232,7 +246,7 @@ class PEGBacktrack(Scene):
         # ---------------- alt 1: "ab" ----------------
         set_caption('Try alt 1: "ab"  ->  save pos = 0')
         saved_marker = Text("saved pos = 0", font_size=20, color=ORANGE)
-        saved_marker.next_to(boxes[0], UP, buff=0.5)
+        saved_marker.next_to(boxes[0], UP, buff=1.0)
         self.play(FadeIn(saved_marker))
 
         set_caption("Tentatively match 'a' against input[0]")
@@ -267,6 +281,180 @@ class PEGBacktrack(Scene):
         result = Text(
             'Rule -> "ac"  (alt 1 was tried and abandoned)', font_size=28, color=YELLOW
         )
-        result.next_to(chargroup, DOWN, buff=3.4)
+        result.next_to(chargroup, DOWN, buff=2.6)
         self.play(Write(result))
+        self.wait(2)
+
+
+class PEGParseTree(Scene):
+    """Build an actual parse tree, node by node, while parsing
+    'print(3+4*2)' against:
+
+        Call   <- Ident '(' Expr ')'
+        Expr   <- Term (('+' / '-') Term)*
+        Term   <- Factor (('*' / '/') Factor)*
+        Factor <- Number / '(' Expr ')'
+        Ident  <- [a-zA-Z]+
+        Number <- [0-9]+
+
+    Every node's (x, y) position is precomputed by hand below (in-order
+    leaf placement + parent-is-average-of-children), so the "layout" is
+    just a lookup table -- no generic tree-layout algorithm needed.
+    """
+
+    # node sizing
+    RULE_W, RULE_H = 1.3, 0.55  # Call / Expr / Term / Factor
+    LIT_W, LIT_H = 0.8, 0.55  # '(' '+' '*' ')'
+    VAL_W, VAL_H = 1.5, 0.75  # Ident/print, Number/3, Number/4, Number/2
+
+    def construct(self):
+        s = "print(3+4*2)"
+
+        title = Text("Building a Parse Tree:  print(3+4*2)", font_size=30).to_edge(UP)
+        self.play(Write(title))
+
+        grammar = (
+            VGroup(
+                Text("Call   <- Ident '(' Expr ')'", font_size=20),
+                Text("Expr   <- Term (('+' / '-') Term)*", font_size=20),
+                Text("Term   <- Factor (('*' / '/') Factor)*", font_size=20),
+                Text("Factor <- Number / '(' Expr ')'", font_size=20),
+            )
+            .arrange(DOWN, aligned_edge=LEFT)
+            .next_to(title, DOWN, buff=0.35)
+        )
+        self.play(FadeIn(grammar))
+        self.wait(1)
+        self.play(FadeOut(title), FadeOut(grammar))
+
+        # ---- input row, pinned near the top ----
+        chargroup, boxes = char_boxes(s, y=3.0)
+        self.play(FadeIn(chargroup))
+
+        cursor = make_cursor()
+        cursor.move_to(boundary_point(boxes, 0))
+        self.play(FadeIn(cursor))
+
+        # ---- running "title" sits directly under the expression; the tree
+        # ---- is laid out below THIS, not the expression itself.
+        caption = Text("parse Call(): create root node", font_size=26)
+        caption.next_to(chargroup, DOWN, buff=0.5)
+        self.play(FadeIn(caption))
+
+        def set_caption(txt, color=WHITE):
+            new = Text(txt, font_size=26, color=color).move_to(caption.get_center())
+            self.play(Transform(caption, new), run_time=0.5)
+
+        def move_cursor(pos):
+            self.play(cursor.animate.move_to(boundary_point(boxes, pos)), run_time=0.35)
+
+        def consume(indices):
+            anims = [boxes[i].animate.set_fill(GREEN, opacity=0.4) for i in indices]
+            self.play(*anims, run_time=0.35)
+            move_cursor(indices[-1] + 1)
+
+        # ---- tree node factory: everything is placed at precomputed coords ----
+        nodes = {}
+
+        def add_node(key, label, x, y, parent_key, color, w, h):
+            rect = RoundedRectangle(
+                corner_radius=0.08,
+                width=w,
+                height=h,
+                color=color,
+                fill_color=color,
+                fill_opacity=0.18,
+            )
+            txt = Text(label, font_size=20, line_spacing=0.8).move_to(rect.get_center())
+            node = VGroup(rect, txt).move_to([x, y, 0])
+            nodes[key] = node
+            anims = [FadeIn(node, scale=0.85)]
+            if parent_key is not None:
+                parent = nodes[parent_key]
+                edge = Line(
+                    parent.get_bottom(), node.get_top(), color=GREY_B, stroke_width=2
+                )
+                anims.append(Create(edge))
+            self.play(*anims, run_time=0.5)
+
+        RW, RH = self.RULE_W, self.RULE_H
+        LW, LH = self.LIT_W, self.LIT_H
+        VW, VH = self.VAL_W, self.VAL_H
+
+        # 5 tree depths, stacked below the title with a fixed gap between
+        # each row (title -> Call -> {Ident,(,Expr,)} -> {Term,+,Term} ->
+        # {Factor,Factor,*,Factor} -> {Number,Number,Number})
+        GAP = 0.9
+        TOP = caption.get_bottom()[1] - 0.55
+        LEVELS = [TOP - i * GAP for i in range(5)]
+
+        # ================= build the tree, in true recursive-descent order =================
+
+        add_node("Call", "Call", -1.07, LEVELS[0], None, BLUE_D, RW, RH)
+
+        set_caption("Call: parse Ident -> matches 'print'")
+        add_node("Ident", "Ident\nprint", -5.6, LEVELS[1], "Call", ORANGE, VW, VH)
+        consume(range(0, 5))
+
+        set_caption("Call: match literal '('")
+        add_node("LitOpen", "'('", -4.0, LEVELS[1], "Call", GREY_B, LW, LH)
+        consume([5])
+
+        set_caption("Call: parse Expr (the argument)")
+        add_node("Expr", "Expr", -0.27, LEVELS[1], "Call", BLUE_D, RW, RH)
+
+        set_caption("Expr: parse first Term")
+        add_node("Term_A", "Term", -2.4, LEVELS[2], "Expr", BLUE_D, RW, RH)
+
+        set_caption("Term: parse Factor")
+        add_node("Factor_A", "Factor", -2.4, LEVELS[3], "Term_A", BLUE_D, RW, RH)
+
+        set_caption("Factor: Number matches '3'")
+        add_node("Num3", "Number\n3", -2.4, LEVELS[4], "Factor_A", YELLOW, VW, VH)
+        consume([6])
+
+        set_caption("Term loop: peek '*' -> sees '+', stop (nothing consumed)")
+        self.play(Indicate(boxes[7], color=RED), run_time=0.5)
+
+        set_caption("Expr loop: match '+'")
+        add_node("LitPlus", "'+'", -0.8, LEVELS[2], "Expr", GREY_B, LW, LH)
+        consume([7])
+
+        set_caption("Expr: parse second Term")
+        add_node("Term_B", "Term", 2.4, LEVELS[2], "Expr", BLUE_D, RW, RH)
+
+        set_caption("Term: parse Factor")
+        add_node("Factor_B1", "Factor", 0.8, LEVELS[3], "Term_B", BLUE_D, RW, RH)
+
+        set_caption("Factor: Number matches '4'")
+        add_node("Num4", "Number\n4", 0.8, LEVELS[4], "Factor_B1", YELLOW, VW, VH)
+        consume([8])
+
+        set_caption("Term loop: match '*'")
+        add_node("LitStar", "'*'", 2.4, LEVELS[3], "Term_B", GREY_B, LW, LH)
+        consume([9])
+
+        set_caption("Term: parse another Factor")
+        add_node("Factor_B2", "Factor", 4.0, LEVELS[3], "Term_B", BLUE_D, RW, RH)
+
+        set_caption("Factor: Number matches '2'")
+        add_node("Num2", "Number\n2", 4.0, LEVELS[4], "Factor_B2", YELLOW, VW, VH)
+        consume([10])
+
+        set_caption("Call: match literal ')'")
+        add_node("LitClose", "')'", 5.6, LEVELS[1], "Call", GREY_B, LW, LH)
+        consume([11])
+
+        # ================= evaluate bottom-up =================
+        set_caption("Parse complete -- evaluate the tree bottom-up", color=GREEN)
+        self.wait(0.4)
+
+        new_call_label = Text("Call\n(prints 11)", font_size=18, line_spacing=0.8)
+        new_call_label.move_to(nodes["Call"][1].get_center())
+        self.play(
+            Transform(nodes["Call"][1], new_call_label),
+            nodes["Call"][0].animate.set_fill(GREEN, opacity=0.25),
+        )
+
+        set_caption("3 + 4*2 = 11   ->   print(11)", color=YELLOW)
         self.wait(2)
