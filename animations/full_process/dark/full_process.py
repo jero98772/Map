@@ -1,20 +1,28 @@
 from manim import *
 
 # ---------- palette ----------
-KEYWORD = "#FF7A5C"  # def / return
-NAME = "#4DABF7"  # identifiers
-NUMBER = "#69DB7C"  # numeric literals
-OP = "#FFD43B"  # operators
-PUNCT = "#ADB5BD"  # punctuation
-ACCENT = "#B983FF"  # structural / headers
-BG_CARD = "#20242C"
+# ---------- palette: Docs/theme-dark.md — "Night-shift terminal" ----------
+KEYWORD = "#f5c02f"  # def / return (--hl-keyword)
+NAME = "#7fd1ff"  # identifiers (--hl-name)
+NUMBER = "#8be0a4"  # numeric literals (--hl-string)
+OP = "#6fa8ff"  # operators (--hl-type)
+TEXT = "#e6edf5"  # body text
+MUTED = "#9fb0c8"  # captions, sub-labels, paths
+PUNCT = MUTED  # punctuation
+COMMENT = "#6c7fa3"  # line numbers, tree edges (--hl-comment)
+ACCENT = "#7fd1ff"  # structural / headers (--accent)
+HILITE = "#f5c02f"  # cursor, current step
+ON_FILL = "#071633"  # text on solid fills
+BG_CARD = "#0e1a33"
+CODE_BG = "#071633"
+BORDER = "#1b2c52"
 
-config.background_color = "#14171C"
+config.background_color = "#0b1220"
 
 
 def chip(label, color, sub=None, w=None, h=0.62):
     """A small rounded rectangle token chip with a label (and optional sub-label)."""
-    txt = Text(label, font="Monospace", font_size=26, color=WHITE, weight=BOLD)
+    txt = Text(label, font="Monospace", font_size=26, color=TEXT, weight=BOLD)
     width = w if w else max(txt.width + 0.5, 0.9)
     box = RoundedRectangle(
         corner_radius=0.1,
@@ -92,7 +100,7 @@ class PythonExecutionJourney(Scene):
         title = Text("How Python Really Runs Your Code", font_size=48, weight=BOLD)
         title.set_color_by_gradient(NAME, ACCENT, NUMBER)
         sub = Text(
-            "def add(a, b):  return a + b", font="Monospace", font_size=28, color=GRAY_B
+            "def add(a, b):  return a + b", font="Monospace", font_size=28, color=MUTED
         )
         sub.next_to(title, DOWN, buff=0.5)
         self.play(FadeIn(title, scale=1.15), run_time=1.0)
@@ -108,10 +116,15 @@ class PythonExecutionJourney(Scene):
         code = Code(
             code_string=code_str,
             language="python",
-            formatter_style="monokai",
+            formatter_style="github-dark",
             background="window",
+            background_config={"fill_color": CODE_BG, "stroke_color": BORDER},
             add_line_numbers=True,
         )
+        # pygments leaves plain tokens and line numbers white; paint them in theme text
+        for glyph in code.family_members_with_points():
+            if glyph.get_fill_color().to_hex().upper() == "#FFFFFF":
+                glyph.set_fill(TEXT)
         code.scale(1.05)
         code.move_to(ORIGIN)
 
@@ -164,7 +177,7 @@ class PythonExecutionJourney(Scene):
             row_chips = VGroup(*[chip(t, c, h=0.56) for t, c in toks])
             row_chips.arrange(RIGHT, buff=0.16)
             row_chips.scale(0.72)
-            num_lbl = Text(str(line_no), font="Monospace", font_size=20, color=GRAY_D)
+            num_lbl = Text(str(line_no), font="Monospace", font_size=20, color=COMMENT)
             row = VGroup(num_lbl, row_chips)
             row.arrange(RIGHT, buff=0.3)
             rows.add(row)
@@ -175,7 +188,7 @@ class PythonExecutionJourney(Scene):
         gutter = Line(
             rows.get_left() + LEFT * 0.15 + UP * 0.35,
             rows.get_left() + LEFT * 0.15 + DOWN * (rows.height + 0.1),
-            color=GRAY_E,
+            color=COMMENT,
             stroke_width=1.5,
         )
 
@@ -212,7 +225,7 @@ class PythonExecutionJourney(Scene):
 
     def _legend_dot(self, label, color):
         dot = Dot(color=color, radius=0.09)
-        txt = Text(label, font_size=20, color=GRAY_B)
+        txt = Text(label, font_size=20, color=MUTED)
         txt.next_to(dot, RIGHT, buff=0.15)
         return VGroup(dot, txt)
 
@@ -337,7 +350,7 @@ class PythonExecutionJourney(Scene):
         head = chapter_title(self, "4 · Abstract Syntax Tree")
 
         def node(label, color=ACCENT, fs=22):
-            txt = Text(label, font_size=fs, color=WHITE, weight=BOLD)
+            txt = Text(label, font_size=fs, color=ON_FILL, weight=BOLD)
             box = RoundedRectangle(
                 corner_radius=0.09,
                 width=txt.width + 0.5,
@@ -387,7 +400,7 @@ class PythonExecutionJourney(Scene):
         n_3.move_to(DOWN * 2.9 + RIGHT * 4.1)
 
         def edge(a, b):
-            return Line(a.get_bottom(), b.get_top(), color=GRAY_D, stroke_width=2)
+            return Line(a.get_bottom(), b.get_top(), color=COMMENT, stroke_width=2)
 
         whole = VGroup(
             n_module,
@@ -478,7 +491,7 @@ class PythonExecutionJourney(Scene):
         ).arrange(DOWN, buff=0.28, aligned_edge=LEFT)
 
         table_box = SurroundingRectangle(
-            rows, color=GRAY_B, buff=0.3, corner_radius=0.1
+            rows, color=MUTED, buff=0.3, corner_radius=0.1
         )
         table = VGroup(table_box, rows)
         table_title.next_to(table_box, UP, buff=0.2)
@@ -491,7 +504,7 @@ class PythonExecutionJourney(Scene):
             self.play(FadeIn(r, shift=LEFT * 0.2), run_time=0.4)
         self.wait(0.3)
 
-        checks_title = Text("Verifying: return a + b", font_size=22, color=GRAY_B)
+        checks_title = Text("Verifying: return a + b", font_size=22, color=MUTED)
         checks_title.next_to(table, DOWN, buff=0.55).align_to(table, LEFT)
         checks = VGroup(
             self._check("a exists"),
@@ -509,12 +522,12 @@ class PythonExecutionJourney(Scene):
 
     def _row(self, name, kind, color):
         n = Text(name, font="Monospace", font_size=22, color=color, weight=BOLD)
-        arrow = Text("→", font_size=22, color=GRAY_B)
-        k = Text(kind, font_size=22, color=WHITE)
+        arrow = Text("→", font_size=22, color=MUTED)
+        k = Text(kind, font_size=22, color=TEXT)
         return VGroup(n, arrow, k).arrange(RIGHT, buff=0.2)
 
     def _check(self, label):
-        txt = Text(label, font="Monospace", font_size=22, color=WHITE)
+        txt = Text(label, font="Monospace", font_size=22, color=TEXT)
         mark = Text("✔", font_size=24, color=NUMBER, weight=BOLD)
         mark.next_to(txt, RIGHT, buff=0.25)
         return VGroup(txt, mark)
@@ -588,7 +601,7 @@ class PythonExecutionJourney(Scene):
 
         stack_title = Text("Evaluation Stack", font_size=24, color=ACCENT, weight=BOLD)
         stack_title.to_edge(RIGHT, buff=1.4).shift(UP * 3.0)
-        floor = Line(RIGHT * 1.8, RIGHT * 6.6, color=GRAY_D, stroke_width=3)
+        floor = Line(RIGHT * 1.8, RIGHT * 6.6, color=COMMENT, stroke_width=3)
         floor.next_to(stack_title, DOWN, buff=3.4)
         self.play(FadeIn(stack_title), Create(floor), run_time=0.5)
 
@@ -764,11 +777,11 @@ class PythonExecutionJourney(Scene):
         self.play(FadeIn(frame, scale=0.9), run_time=0.7)
         self.wait(0.6)
 
-        destroyed = Text("Frame destroyed", font_size=26, color=GRAY_B, slant=ITALIC)
+        destroyed = Text("Frame destroyed", font_size=26, color=MUTED, slant=ITALIC)
         destroyed.move_to(frame_lbl)
         self.play(
             Transform(frame_lbl, destroyed),
-            frame_box.animate.set_stroke(color=GRAY_D),
+            frame_box.animate.set_stroke(color=COMMENT),
             rows.animate.set_opacity(0.15),
             run_time=0.6,
         )
@@ -809,7 +822,7 @@ class PythonExecutionJourney(Scene):
             "Bytecode",
             "Python VM",
         ]
-        colors = [WHITE, KEYWORD, ACCENT, NUMBER, NAME, OP, KEYWORD]
+        colors = [TEXT, KEYWORD, ACCENT, NUMBER, NAME, OP, KEYWORD]
         boxes = VGroup(*[card(l, c, w=3.6, h=0.55) for l, c in zip(labels, colors)])
         boxes.arrange(DOWN, buff=0.14)
         boxes.scale(0.82)
@@ -822,7 +835,7 @@ class PythonExecutionJourney(Scene):
                     boxes[i + 1].get_top(),
                     buff=0.04,
                     stroke_width=2.5,
-                    color=GRAY_B,
+                    color=MUTED,
                     max_tip_length_to_length_ratio=0.25,
                 )
                 for i in range(len(boxes) - 1)
@@ -842,7 +855,7 @@ class PythonExecutionJourney(Scene):
             boxes[-1].get_bottom() + DOWN * 0.9,
             buff=0.04,
             stroke_width=2.5,
-            color=GRAY_B,
+            color=MUTED,
             max_tip_length_to_length_ratio=0.25,
         )
         output = Text("8", font="Monospace", font_size=40, color=NUMBER, weight=BOLD)

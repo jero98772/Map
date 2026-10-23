@@ -59,14 +59,15 @@ In short:
     Compiler: Translate everything first, then run the finished code.
 
 
+(Animation here)
+
+
 | Interpreter                                                           | Compiler                                                                         |
 | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Translates and executes code **line by line** while the program runs. | Translates the **entire program** into machine code before it runs.              |
 | Starts quickly but performs translation during execution.             | Takes time to compile first, but the resulting program usually runs much faster. |
 | Reports errors as they are encountered.                               | Reports compilation errors before the program starts.                            |
 
-
-(Animation here)
 
 Think about a speech being delivered in a foreign language.
 
@@ -94,6 +95,10 @@ Instead, we're building a **minimal subset**: variables, arithmetic, strings, li
 
 By the end of this article, our tiny interpreter will be able to run this exact program, which we'll use as a running example throughout every chapter:
 
+And other 5 examples to show important diferent between Cpython and Map interpeters for example how to find a paildrom if we dont have function like 
+
+    string[::-1] == string
+
 ```python
 def fibonacci_recursive(n):
     if n <= 1:
@@ -106,14 +111,18 @@ def fibonacci_iterative(n):
     if n <= 1:
         return n
 
-    a, b = 0, 1
+    a = 0
+    b = 1
     for _ in range(2, n + 1):
-        a, b = b, a + b
+        a = b
+        b = a + b
 
     return b
 
 print(fibonacci_iterative(5))
 ```
+
+
 
 Two ways of computing the same [Fibonacci number](https://en.wikipedia.org/wiki/Fibonacci_sequence) — one recursive, one iterative — using functions, conditionals, arithmetic, and a loop. If our interpreter can correctly run this by the end of the article, we've succeeded. (One small honest note: our minimal grammar doesn't support the multi-assignment shorthand `a, b = 0, 1` directly — we'll flag that explicitly in Chapter 6 as a great "grow the interpreter yourself" exercise, because the reason it's excluded is exactly the kind of grammar tradeoff this whole article is about.)
 
@@ -155,7 +164,7 @@ by
     print(1)
     print(2)
     print(3)
-Each box is a chapter (or several) in this article. Each one takes something messy and turns it into something more structured, until eventually the structure is clean enough that "running" the program just means walking through it and doing what it says.
+
 
 By the time we're done, you'll have written:
 
@@ -164,17 +173,12 @@ By the time we're done, you'll have written:
 - An **interpreter** that walks the tree and actually executes it.
 - A handful of **built-in functions**, some **error handling**, and a simple **REPL** to play with it all interactively.
 
-Let's start at the very end of that pipeline conceptually, but the very *beginning* practically: a program that just talks back to you.
-
-**Exercises before moving on:**
-1. Open a Python shell (type `python3` in your terminal) and try typing `2 + 2`, then `print("hi")`, then a syntax error like `if True`. Notice how Python responds differently to each.
-2. Without looking anything up, write down — in plain English — what you *think* happens between you pressing Enter and Python printing a result. We'll compare this to reality as we go.
-
-**Coming up next:** we build the smallest possible version of an interactive Python-like shell: one that reads a line, echoes it back, and loops forever. From there, we'll slowly teach it to actually *understand* what it reads.
 
 ---
 
 ## 2. The REPL: Read, Eval, Print, Loop
+
+(animation open terminal with python relp)
 
 ### Motivation
 
