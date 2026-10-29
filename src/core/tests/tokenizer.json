@@ -1,0 +1,27 @@
+[
+ {
+  "name": "comparison_operators",
+  "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 == 4)\n",
+  "expected": "True\nTrue\nFalse\n"
+ },
+ {
+  "name": "multi_digit_integers",
+  "source": "print(1234 + 5678)\n",
+  "expected": "6912\n"
+ },
+ {
+  "name": "nested_indent_dedent",
+  "source": "def f(n):\n    if n < 1:\n        return 0\n    else:\n        if n == 1:\n            return 10\n    return 20\n\nprint(f(0))\nprint(f(1))\nprint(f(2))\n",
+  "expected": "0\n10\n20\n"
+ },
+ {
+  "name": "bad_character",
+  "source": "x = 1 $ 2\n",
+  "expected": "LexerError: SyntaxError: unexpected character '$' [line 1]\n"
+ },
+ {
+  "name": "bad_dedent",
+  "source": "def fib_rec(n):\n    if n <= 1:\n        return n\n  return fib_rec(n - 1) + fib_rec(n - 2)\n",
+  "expected": "LexerError: IndentationError: unindent does not match any outer indentation level [line 4]\n"
+ }
+]

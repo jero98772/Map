@@ -1,0 +1,10 @@
+def memo(rule):
+    def wrapper(self):
+        key = (rule.__name__, self.pos)
+        if key in self.memo:
+            node, self.pos = self.memo[key]     # hit: jump straight to the end
+            return node
+        node = rule(self)
+        self.memo[key] = (node, self.pos)
+        return node
+    return wrapper

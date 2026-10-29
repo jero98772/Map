@@ -1,0 +1,17 @@
+[
+ {
+  "name": "left_associative",
+  "source": "print(10 - 3 - 2)\n",
+  "expected": "5\n"
+ },
+ {
+  "name": "nested_calls",
+  "source": "def inc(n):\n    return n + 1\n\nprint(inc(inc(inc(0))))\n",
+  "expected": "3\n"
+ },
+ {
+  "name": "if_else_in_def",
+  "source": "def sign(n):\n    if n < 0:\n        return 0 - 1\n    else:\n        return 1\n\nprint(sign(0 - 5))\nprint(sign(5))\n",
+  "expected": "-1\n1\n"
+ }
+]

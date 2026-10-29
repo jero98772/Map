@@ -1,0 +1,27 @@
+[
+ {
+  "name": "print_many_arguments",
+  "source": "print(1, 2, 3)\n",
+  "expected": "1 2 3\n"
+ },
+ {
+  "name": "print_constants",
+  "source": "print(None)\nprint(True)\nprint(False)\n",
+  "expected": "None\nTrue\nFalse\n"
+ },
+ {
+  "name": "range_stop",
+  "source": "for i in range(3):\n    print(i)\n",
+  "expected": "0\n1\n2\n"
+ },
+ {
+  "name": "range_start_stop",
+  "source": "for i in range(2, 5):\n    print(i)\n",
+  "expected": "2\n3\n4\n"
+ },
+ {
+  "name": "sum_with_for",
+  "source": "total = 0\nfor i in range(5):\n    total = total + i\nprint(total)\n",
+  "expected": "10\n"
+ }
+]

@@ -1,0 +1,43 @@
+  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(<=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_SMALL_INT           0
+              STORE_FAST               1 (a)
+
+  5           LOAD_SMALL_INT           1
+              STORE_FAST               2 (b)
+
+  6           LOAD_GLOBAL              1 (range + NULL)
+              LOAD_SMALL_INT           2
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP                0 (+)
+              CALL                     2
+              GET_ITER
+      L2:     FOR_ITER                15 (to L3)
+              STORE_FAST               3 (i)
+
+  7           LOAD_FAST_BORROW_LOAD_FAST_BORROW 18 (a, b)
+              BINARY_OP                0 (+)
+              STORE_FAST               4 (temp)
+
+  8           LOAD_FAST                2 (b)
+              STORE_FAST               1 (a)
+
+  9           LOAD_FAST                4 (temp)
+              STORE_FAST               2 (b)
+              JUMP_BACKWARD           17 (to L2)
+
+  6   L3:     END_FOR
+              POP_ITER
+
+ 10           LOAD_FAST_BORROW         2 (b)
+              RETURN_VALUE

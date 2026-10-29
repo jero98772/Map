@@ -1,14 +1,142 @@
 {% extends "base.html" %}
-{% block content %}
 
-<section>
-    <h2>{{ content.print.heading }}</h2>
-    <p>{{ content.print.description }}</p>
-    <nav>
-        {% for cl in code_languages %}
-        <a href="/{{ lang }}/make-a-python/?prog_lang={{ cl.replace('+', '%2B') }}">{{ cl }}</a>
-        {% endfor %}
+{% macro code_figure(title, snippet, hl, fallback=none) %}
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">{{ title }}</span>
+        {% if snippet.ref %}<span class="ref">{{ snippet.ref }}</span>{% endif %}
+    </figcaption>
+    {% if fallback %}<p class="fallback">{{ fallback }}</p>{% endif %}
+    <pre><code class="language-{{ hl }}">{{ snippet.code }}</code></pre>
+</figure>
+{% endmacro %}
+
+{% macro anim(v) %}
+<figure class="video">
+    <img src="{{ url_for('static', path=v.media.dark.gif) }}" alt="{{ v.caption }}" loading="lazy"
+         data-dark="{{ url_for('static', path=v.media.dark.gif) }}"
+         data-light="{{ url_for('static', path=v.media.light.gif) }}">
+    <figcaption>{{ v.caption }} · <a href="{{ url_for('static', path=v.media.dark.mp4) }}"
+         data-dark="{{ url_for('static', path=v.media.dark.mp4) }}"
+         data-light="{{ url_for('static', path=v.media.light.mp4) }}">{{ content.ui.open_video }}</a></figcaption>
+</figure>
+{% endmacro %}
+
+{% macro render(block) %}
+{% if block.t == "html" %}
+{{ block.html | safe }}
+{% elif block.t == "code" %}
+{{ code_figure(block.title, block.snippet, block.hl,
+               content.ui.fallback.replace('{lang}', prog_name) if block.snippet.fell_back else none) }}
+{% elif block.t == "shared" %}
+{{ code_figure(block.title, block.snippet, block.snippet.hl if not block.snippet.out else "plaintext out") }}
+{% elif block.t == "anim" %}
+<div class="videos">{{ anim(block) }}</div>
+{% elif block.t == "shared_html" %}
+<details><summary>{{ block.summary }}</summary>{{ block.html | safe }}</details>
+{% elif block.t == "cols" %}
+<div class="twocol">{% for b in block.blocks %}{{ render(b) }}{% endfor %}</div>
+{% elif block.t == "image" %}
+<figure class="diagram">
+    <img class="only-dark" src="{{ url_for('static', path=block.dark) }}" alt="{{ block.alt }}" loading="lazy">
+    <img class="only-light" src="{{ url_for('static', path=block.light) }}" alt="{{ block.alt }}" loading="lazy">
+</figure>
+{% elif block.t == "errgrid" %}
+<div class="errgrid">
+    {% for item in block["items"] %}
+    <div class="errcase">
+        {{ code_figure("examples/errors/" ~ item.id[4:] ~ ".py", item.snippet, "python") }}
+        <p class="errmsg">{{ item.msg }}</p>
+        <details class="predict"><summary>{{ content.ui.guess_cpython }}</summary><p class="cpy">{{ item.cpy }}</p></details>
+        <p class="where">{{ content.ui.stops_at }}: {{ item.where }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<p class="subtitle">{{ content.subtitle }}</p>
+
+<aside class="invite">
+    <h2>{{ content.ui.invite_title }}</h2>
+    <div class="invite-text">{{ content.ui.invite_text | safe }}</div>
+</aside>
+
+<figure class="teaser">
+    <video id="teaser" autoplay muted loop playsinline controls preload="auto"
+           aria-label="{{ content.ui.teaser }}"
+           data-dark="{{ url_for('static', path='video/dark/PythonExecutionJourney.mp4') }}"
+           data-light="{{ url_for('static', path='video/light/PythonExecutionJourney.mp4') }}"></video>
+    <script>
+        (function (v) {
+            v.src = v.getAttribute('data-' + (document.documentElement.getAttribute('data-theme') || 'dark'));
+        })(document.getElementById('teaser'));
+    </script>
+</figure>
+
+<div class="layout">
+    <nav class="toc" aria-label="{{ content.ui.chapters }}">
+        <b>{{ content.ui.chapters }}</b>
+        <ol>
+            {% for ch in chapters %}
+            <li><a href="#{{ ch.id }}">{{ ch.title }}</a></li>
+            {% endfor %}
+        </ol>
+        <p class="toc-lang">{{ content.ui.code_in }} <b>{{ prog_name }}</b></p>
     </nav>
-    <pre>{{ snippet }}</pre>
+
+    <div class="chapters">
+        {% for ch in chapters %}
+        <section class="chapter" id="{{ ch.id }}">
+            <h2>{{ loop.index }} · {{ ch.title }}</h2>
+            {% if ch.term %}<p class="term">{{ ch.term }}</p>{% endif %}
+            {% if ch.meta %}<p class="chmeta">{{ ch.meta }}</p>{% endif %}
+
+            {% if ch.notes.get(prog_lang) %}
+            <aside class="porting">
+                <h4>{{ content.ui.porting.replace('{lang}', prog_name) }}</h4>
+                <p>{{ ch.notes[prog_lang] | safe }}</p>
+            </aside>
+            {% endif %}
+
+            {% for block in ch.blocks %}{{ render(block) }}{% endfor %}
+
+            {% if ch.videos %}
+            <h3>{{ content.ui.animation }}</h3>
+            <div class="videos">
+                {% for v in ch.videos %}{{ anim(v) }}{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if ch.tests %}
+            <section class="tests">
+                <h4>{{ content.ui.tests }}</h4>
+                <p>{{ content.ui.run }}: <code>cd tutorial &amp;&amp; python3 -m unittest tests.test_tutorial.{{ ch.tests }} -v</code></p>
+                {{ code_figure("", tests[ch.id], "python") }}
+            </section>
+            {% endif %}
+
+            {% if ch.checkpoint %}
+            <aside class="checkpoint">
+                <p><b>{{ content.ui.try_it }}</b> {{ ch.checkpoint.try | safe }}</p>
+                <p><b>{{ content.ui.break_it }}</b> {{ ch.checkpoint["break"] | safe }}</p>
+                <p><b>{{ content.ui.have_now }}</b> {{ ch.checkpoint.have | safe }}</p>
+            </aside>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+</div>
+
+<section class="recap" id="recap">
+    <h2>{{ content.ui.recap_title }}</h2>
+    <figure class="teaser">
+        <video id="recap-video" controls playsinline preload="metadata"
+               aria-label="{{ content.ui.recap }}"
+               data-dark="{{ url_for('static', path='video/dark/InterpreterTutorial.mp4') }}"
+               data-light="{{ url_for('static', path='video/light/InterpreterTutorial.mp4') }}"></video>
+        <figcaption>{{ content.ui.recap }}</figcaption>
+    </figure>
 </section>
 {% endblock %}

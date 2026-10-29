@@ -1,0 +1,16 @@
+static const std::vector<std::pair<std::string, Value::BuiltinFn>> BUILTINS = {
+    {"print", builtin_print},
+    {"len", builtin_len},
+    {"range", builtin_range},
+    {"int", builtin_int},
+    {"float", builtin_float},
+    {"str", builtin_str},
+    {"bool", builtin_bool},
+    {"input", builtin_input},
+    {"abs", builtin_abs},
+    {"max", builtin_max},
+    {"min", builtin_min},
+    {"type", builtin_type},
+    {"append", builtin_append},
+    {"pop", builtin_pop},
+};

@@ -1,0 +1,23 @@
+  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(<=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP               10 (-)
+              CALL                     1
+              LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           2
+              BINARY_OP               10 (-)
+              CALL                     1
+              BINARY_OP                0 (+)
+              RETURN_VALUE

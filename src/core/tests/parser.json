@@ -1,0 +1,42 @@
+[
+ {
+  "name": "precedence",
+  "source": "print(1 + 2 * 3)\n",
+  "expected": "7\n"
+ },
+ {
+  "name": "parentheses",
+  "source": "print((1 + 2) * 3)\n",
+  "expected": "9\n"
+ },
+ {
+  "name": "missing_colon",
+  "source": "def fib_rec(n):\n    if n <= 1\n        return n\n    return n\n",
+  "expected": "ParseError: SyntaxError: expected ':' after if-condition [line 2]\n"
+ },
+ {
+  "name": "unclosed_paren",
+  "source": "print(fib_rec(4)\n",
+  "expected": "ParseError: SyntaxError: expected ')' after arguments [line 2]\n"
+ },
+ {
+  "name": "def_without_paren",
+  "source": "def fib_rec n:\n    return n\n",
+  "expected": "ParseError: SyntaxError: expected '(' after function name [line 1]\n"
+ },
+ {
+  "name": "double_equal",
+  "source": "a = = 1\n",
+  "expected": "ParseError: SyntaxError: unexpected token '=' ('=') [line 1]\n"
+ },
+ {
+  "name": "missing_indent",
+  "source": "if True:\nprint(1)\n",
+  "expected": "ParseError: SyntaxError: expected indented block [line 2]\n"
+ },
+ {
+  "name": "dangling_operator",
+  "source": "n = 1 +\n",
+  "expected": "ParseError: SyntaxError: unexpected token 'NEWLINE' ('\\n') [line 1]\n"
+ }
+]

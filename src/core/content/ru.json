@@ -1,7 +1,690 @@
 {
-  "title": "Сделай Python",
-  "print": {
-    "heading": "Пример вывода",
-    "description": "Этот фрагмент выводит простое сообщение в консоль."
+ "title": "Сделай Python",
+ "subtitle": "Соберите интерпретатор Python шаг за шагом. Код взят из шести интерпретаторов этого проекта; анимации созданы с помощью manim-slides.",
+ "ui": {
+  "language": "Язык",
+  "prog_language": "Язык программирования",
+  "chapters": "Главы",
+  "animation": "Анимация",
+  "porting": "Язык под лупой: {lang}",
+  "run": "Запустить",
+  "run_tests": "Запустить тесты",
+  "expected": "Ожидается",
+  "output": "Вывод",
+  "passed": "пройден",
+  "failed": "провален",
+  "running": "Выполняется…",
+  "tests_intro": "Каждый случай — это программа и точный вывод, который она должна напечатать. Запустите их здесь на эталонном интерпретаторе или передайте те же программы своему.",
+  "tests": "Тесты",
+  "fallback": "В {lang} нет отдельного аналога — показана версия на Python",
+  "stops_at": "Останавливается на",
+  "teaser": "Как выполняется программа на Python: от исходного кода до вывода",
+  "open_video": "открыть видео",
+  "recap_title": "Весь путь",
+  "recap": "Весь интерпретатор, глава за главой: от исходного кода до вывода",
+  "theme": "Переключить светлую и тёмную тему",
+  "menu": "Открыть или закрыть меню",
+  "footer": "© 2026 Сделай Python",
+  "not_found": "Страница \"{path}\" не существует.",
+  "home": "На главную",
+  "code_in": "Код на этой странице показан на",
+  "invite_title": "Напишите свой Python",
+  "invite_text": "<p>Каждый раз, когда вы набираете <code>python3 script.py</code>, программа читает ваш код и оживляет его. Эта программа — не магия. К концу этой страницы вы напишете такую сами.</p><pre>$ python3 main.py program_a.py\n3</pre><p>Эта тройка будет вашей. Вот рецепт: пройдите главы по порядку на любом языке. Программы A и B и тесты — ваши контрольные точки, а шесть интерпретаторов на этой странице помогут сверяться на каждом шаге.</p>",
+  "try_it": "Попробуйте:",
+  "break_it": "Сломайте:",
+  "have_now": "Что у вас есть:",
+  "guess_cpython": "Угадайте сообщение CPython и нажмите"
+ },
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Обзор: конвейер",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Интерпретатор — это программа, которая читает другую программу и выполняет её. MAP («Make A Python», «сделай Python») — крошечное подмножество Python: целые числа, булевы значения, <code>None</code>, переменные, <code>+ - &lt; &lt;= ==</code>, <code>if/else</code>, <code>def/return</code>, рекурсия, <code>for … in range(…)</code> и встроенные функции <code>print</code> и <code>range</code>. Несмотря на размер, ему уже нужны все этапы настоящего интерпретатора.</p><ol class='pipeline'><li><b>Исходный код</b>: программа в виде одной строки.</li><li><b>Токенизатор</b>: превращает символы в слова вроде <code>DEF</code>, <code>NAME fib_rec</code> или <code>INDENT</code>.</li><li><b>Парсер</b>: сверяет слова с грамматикой и строит дерево.</li><li><b>AST</b>: дерево объектов-узлов (<code>FuncDef</code>, <code>If</code>, <code>BinOp</code> …).</li><li><b>Семантический анализ</b>: решает, какие имена локальные, а какие глобальные, и отвергает неверные программы, не запуская их.</li><li><b>Вычисление обходом дерева + память</b>: обходит дерево, создавая фреймы и значения.</li><li><b>Вывод</b>: то, что пишет <code>print</code>.</li></ol><p>Настоящий CPython после AST сворачивает в сторону: он компилирует дерево в <b>байткод</b> и выполняет его на виртуальной машине. MAP никогда не создаёт байткод; он обходит дерево напрямую.</p>"
+    },
+    {
+     "t": "image",
+     "light": "img/pipeline-programing_languages_light.png",
+     "dark": "img/pipeline-programing_languages_dark.png",
+     "alt": "Фазы компилятора: лексический, синтаксический и семантический анализ, промежуточный код, оптимизация и генерация кода"
+    },
+    {
+     "t": "html",
+     "html": "<p>Два сквозных примера проходят через все главы:</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "program_a",
+       "title": "Программа A — fib_rec(4)"
+      },
+      {
+       "t": "shared",
+       "id": "program_b",
+       "title": "Программа B — fib_iter(6)"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<p>Если запустить их эталонным интерпретатором, <code>python3 python_interpreter_in_python/main.py tutorial/examples/program_a.py</code> выведет <b>3</b>, а программа B выведет <b>8</b>.</p><h3>Шесть интерпретаторов, один замысел</h3><p>В проекте один и тот же интерпретатор написан шесть раз. Выберите его в списке <b>Язык программирования</b> вверху: все блоки кода на странице покажут этот интерпретатор. Общее у них всех — конвейер выше; стек отступов, порождающий INDENT и DEDENT; парсер рекурсивного спуска с той же цепочкой приоритетов; около 23 типов узлов, названных как в модуле <code>ast</code> CPython; <code>Environment{vars, parent}</code>; ошибки с номером строки; и те же 14 встроенных функций. Как это выражает каждый язык:</p><details><summary>Сравнить шесть реализаций</summary><div class='tablewrap'><table><tr><th></th><th>Python</th><th>Rust</th><th>C++</th><th>Java</th><th>Clojure</th><th>LLVM</th></tr><tr><td>Тип токена</td><td><code>TT(Enum)</code> + <code>@dataclass Token</code></td><td><code>enum TokKind</code> с данными + <code>Tag</code></td><td><code>enum class TT</code> + размеченное объединение <code>TokenValue</code></td><td><code>enum TT</code> + <code>record Token</code></td><td>keywords + <code>defrecord Token</code></td><td>как в Python, операторы в таблицах</td></tr><tr><td>Парсер</td><td>рекурсивный спуск, просмотр на 1–2 токена</td><td>так же</td><td>так же</td><td>так же</td><td>так же, состояние в atom</td><td>так же</td></tr><tr><td>AST</td><td>подклассы <code>@dataclass</code></td><td><code>enum Expr / enum Stmt</code>, <code>Box</code></td><td>один большой <code>ASTNode</code> + метка <code>NodeType</code></td><td><code>sealed interface Node</code> + records</td><td><code>defrecord</code> на каждый узел</td><td>те же dataclass</td></tr><tr><td>Диспетчеризация</td><td><code>getattr(self, \"_eval_\"+cls)</code></td><td><code>match</code></td><td><code>switch(node-&gt;type)</code></td><td><code>switch</code> с шаблонами</td><td><code>defmulti</code> по типу</td><td><code>getattr</code> → генерирует IR</td></tr><tr><td>Окружение</td><td>dict + родитель</td><td><code>Rc&lt;Env&gt;</code>, <code>RefCell&lt;HashMap&gt;</code></td><td><code>shared_ptr&lt;Environment&gt;</code></td><td><code>HashMap</code> + родитель</td><td><code>Env{vars: atom, parent}</code></td><td>локальные через <code>alloca</code> + глобальные слоты</td></tr><tr><td>return</td><td><code>raise ReturnSignal</code></td><td><code>Err(Flow::Return(v))</code></td><td><code>throw ReturnException</code></td><td><code>throw ReturnSignal</code></td><td><code>ex-info</code></td><td>нативный <code>ret</code></td></tr><tr><td>Ошибки</td><td>PyError(msg, line)</td><td>enum PyError, строка</td><td>EduPyError, строка</td><td>PyError, строка</td><td>ex-info, строка</td><td>PyError, строка</td></tr><tr><td>Предел рекурсии</td><td>предел хоста → InternalError</td><td>нет</td><td>нет</td><td>StackOverflowError → RecursionError</td><td>нет</td><td><code>MAX_DEPTH = 4000</code></td></tr></table></div><p>Эти шесть — лишь примеры. Тот же дизайн можно перенести на любой другой язык, но каждая реализация будет отличаться: у каждого языка свой способ выражать токены, узлы, диспетчеризацию и ошибки.</p></details>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "pipeline",
+     "caption": "Конвейер"
+    }
+   ],
+   "notes": {
+    "python": "<code>python_interpreter_in_python/main.py</code> — эталон: остальные пять повторяют его структуру функция за функцией.",
+    "rust": "<code>python_interpreter_rust/src/main.rs</code>: тот же конвейер на enum, <code>Result</code> и <code>Rc&lt;Env&gt;</code>; ошибки и <code>return</code> передаются как значения, а не как исключения.",
+    "c++": "<code>python_interpreter_cpp/main.cpp</code>: тот же конвейер с одним большим <code>ASTNode</code>, окружениями на <code>shared_ptr</code> и исключениями C++.",
+    "java": "<code>python_interpreter_java/Main.java</code>: тот же конвейер на records, запечатанном интерфейсе <code>Node</code> и <code>switch</code> с шаблонами.",
+    "clojure": "<code>python_interpreter_clojure/main.clj</code>: тот же конвейер с узлами <code>defrecord</code>, состоянием в atom и диспетчеризацией через <code>defmulti</code>.",
+    "llvm": "<code>python_interpreter_llvm/main.py</code>: те же лексер, парсер и AST, что в main.py, но вместо обхода дерева он <b>компилирует</b> его в LLVM IR и выполняет нативный код."
+   },
+   "meta": "~10 мин · ★☆☆"
+  },
+  {
+   "id": "tokenizer",
+   "title": "Чтение: из символов в слова",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Представьте, что вы читаете предложение. Прежде чем понять его, вы делите его на слова. Токенизатор делает с программой то же самое.</p><p>Токенизатор (его также называют лексером или сканером) читает исходный код <b>по одному символу</b> и группирует символы в <b>токены</b>. Это сканер, написанный вручную: цикл, который запрашивает следующий токен до конца текста. Каждый вызов смотрит на текущий символ и решает, какой токен с него начинается.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.loop",
+     "title": "цикл сканера"
+    },
+    {
+     "t": "code",
+     "id": "lexer.dispatch",
+     "title": "выбор по текущему символу"
+    },
+    {
+     "t": "html",
+     "html": "<p>Токен помнит свой <b>тип</b>, своё <b>значение</b> и <b>откуда он взялся</b> (строку и столбец). Эта позиция потом нужна сообщениям об ошибках.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.token",
+     "title": "токен"
+    },
+    {
+     "t": "html",
+     "html": "<h3>INDENT и DEDENT</h3><p>Представьте вложенные коробки: каждую открытую коробку нужно закрыть. INDENT открывает коробку, DEDENT закрывает.</p><p>В Python нет фигурных скобок, поэтому блоки задаются начальными пробелами. В начале каждой строки лексер считает пробелы и сравнивает их число с вершиной стека <code>indent_stack</code>, который начинается как <code>[0]</code>:</p><ul><li>пробелов больше, чем на вершине: положить новую ширину в стек и выдать <code>INDENT</code></li><li>пробелов меньше: снимать со стека и выдавать по одному <code>DEDENT</code> на каждый снятый уровень</li><li>после снятия ширина должна совпасть с новой вершиной, иначе <code>IndentationError</code></li><li>пустые строки и строки только с комментарием пропускаются и стек не трогают.</li></ul><p>В конце файла каждый ещё открытый уровень получает DEDENT. Поэтому INDENT и DEDENT всегда уравновешены.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.indent",
+     "title": "обработка отступов"
+    },
+    {
+     "t": "html",
+     "html": "<h3>Программа A в виде токенов</h3><p>44 токена, прямо из <code>Lexer(source).tokenize()</code>:</p><details class='predict'><summary>Сначала угадайте: сколько токенов INDENT и сколько DEDENT в программе A?</summary><p><b>По 2.</b> Один INDENT для тела <code>fib_rec</code> и один для тела <code>if</code>. Оба закрываются, поэтому DEDENT тоже 2.</p></details>"
+    },
+    {
+     "t": "shared_html",
+     "id": "tokens_a",
+     "summary": "Показать все 44 токена"
+    }
+   ],
+   "videos": [
+    {
+     "file": "tokens_a",
+     "caption": "Программа A токен за токеном"
+    },
+    {
+     "file": "indent_b",
+     "caption": "INDENT и DEDENT в программе B"
+    }
+   ],
+   "notes": {
+    "python": "Токены — это перечисление <code>TT</code> плюс <code>@dataclass Token</code>; ошибки выбрасываются как <code>LexerError</code>.",
+    "rust": "Тот же алгоритм; <code>Result&lt;(), PyError&gt;</code> вместо исключения; токены — это <code>enum TokKind</code>, который несёт значение.",
+    "c++": "<code>std::vector&lt;int&gt; indent_stack_</code>; значение токена — написанное вручную размеченное объединение <code>TokenValue</code>.",
+    "java": "Стек <code>List&lt;Integer&gt;</code>; <code>record Token(TT type, Object value, int line, int col)</code>.",
+    "clojure": "Всё состояние лексера живёт в одном atom; стек — вектор, с которым работают через <code>conj</code>/<code>pop</code>.",
+    "llvm": "Лексер такой же, как в main.py; операторы ищутся в таблицах <code>_TWO_CHAR</code> и <code>_ONE_CHAR</code>."
+   },
+   "term": "Токенизатор",
+   "meta": "~30 мин · ★★☆",
+   "checkpoint": {
+    "try": "добавьте <code>!=</code> в свой токенизатор.",
+    "break": "сделайте отступ одной строки табуляцией, а следующей — пробелами. Что произойдёт?",
+    "have": "Ваш интерпретатор умеет читать слова. Предложения он пока не понимает."
+   }
+  },
+  {
+   "id": "parser",
+   "title": "Грамматика: складываются ли слова в предложение?",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Представьте учителя грамматики, который разбирает предложение: здесь подлежащее, там сказуемое. Парсер делает то же с токенами. Он проверяет, что они подходят под грамматику, и рисует структуру.</p><p>Парсер проверяет, что токены образуют правильную программу, и строит дерево. Грамматика MAP, записанная как <b>PEG</b> (Parsing Expression Grammar, грамматика разбирающих выражений):</p>"
+    },
+    {
+     "t": "shared",
+     "id": "grammar",
+     "title": "грамматика MAP (подмножество EBNF-комментария в main.py:656)"
+    },
+    {
+     "t": "html",
+     "html": "<p>Как её читать: <code>e1 e2</code> — последовательность, <code>e*</code> — «ноль или больше» (цикл while), <code>e?</code> — необязательная часть, а <code>e1 / e2</code> — <b>упорядоченный выбор</b>. Парсер сначала пробует <code>e1</code> и пробует <code>e2</code>, только если <code>e1</code> не подошла. Неоднозначности не бывает: побеждает первая успешная альтернатива.</p><div class='deepdive'><h3>Для любознательных (можно пропустить): Откат (backtracking)</h3><p>Эту часть можно пропустить. Ни один из шести интерпретаторов не делает откат, но здесь объясняется, что значит «PEG».</p><p>Если альтернатива не удалась на полпути, парсер должен <b>вернуться назад</b>. Перед попыткой он запоминает позицию курсора, а при неудаче восстанавливает её:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "ordered_choice",
+     "title": "упорядоченный выбор вручную (приём из peg.txt)"
+    },
+    {
+     "t": "html",
+     "html": "<p>Пример: на <code>print(fib_rec(4))</code> правило <code>assign</code> совпадает с <code>NAME print</code>, затем ждёт <code>'='</code>, но находит <code>'('</code>. Оно не срабатывает, курсор возвращается на 0, и <code>expr_stmt</code> разбирает всю строку.</p><h3>Мемоизация packrat</h3><p>Откат может заставить парсер повторять работу, например в <code>comparison &lt;- sum '&lt;=' sum / sum</code>. Обе альтернативы начинают с разбора <code>sum</code> с одной и той же позиции. Парсер <b>packrat</b> хранит таблицу мемоизации <code>(правило, позиция) → (узел, конечная позиция)</code>, поэтому каждое правило выполняется не больше одного раза на позицию, и разбор остаётся линейным:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "packrat",
+     "title": "packrat в нескольких строках"
+    },
+    {
+     "t": "html",
+     "html": "</div><aside class='history'><h3>Уголок истории · До PEG: LL(1)-парсер CPython</h3><p>Представьте Python 3.8. Вы пишете <code>f() = 1</code>. Парсер смотрит и говорит: всё в порядке! Только следующий этап замечает проблему и жалуется: «can't assign to function call». Почему парсер это пропустил? Из-за того, как он был устроен.</p><p>Почти 30 лет CPython обходился без PEG. До Python 3.8 его парсер генерировался программой <b>pgen</b> из файла <code>Grammar/Grammar</code> и был <b>LL(1)</b>-парсером:</p><ul><li><b>L</b>: читает токены слева направо (<i>Left to right</i>);</li><li><b>L</b>: строит левостороннее выведение (<i>Leftmost</i>): всегда сначала раскрывает самое левое правило, сверху вниз;</li><li><b>(1)</b>: принимает решение, заглядывая ровно на <b>1</b> токен вперёд.</li></ul><p>LL(1)-парсер работает по таблице и никогда не откатывается. Он хранит стек ещё не разобранных правил, а таблица сопоставляет паре <code>(правило на вершине стека, следующий токен)</code> ровно одну продукцию. Если ячейка пуста, программа — SyntaxError.</p><p>У этой мощи есть пределы. Грамматика не может быть леворекурсивной, и каждый выбор должен решаться по одному токену. Поэтому некоторые правила писали слишком широкими и исправляли позже: <code>f() = 1</code> разбиралось как допустимый оператор и отвергалось только при построении AST («can't assign to function call»). Операторы <code>with</code> в скобках и <code>match</code> выразить было вовсе невозможно. <b>PEP 617</b> заменил его PEG-парсером в <b>Python 3.9</b> (старый ещё был доступен через <code>-X oldparser</code>), а в <b>3.10</b> LL(1)-парсер удалили.</p><p>Парсер MAP близок к старому: это написанный вручную рекурсивный спуск, который решает по одному токену, а на <code>NAME '='</code> — по двум (LL(2)). Поэтому ему никогда не нужен откат PEG, описанный выше.</p>"
+    },
+    {
+     "t": "anim",
+     "file": "ll1",
+     "caption": "Табличный LL(1)-разбор id + id"
+    },
+    {
+     "t": "html",
+     "html": "</aside><h3>Что на самом деле делают интерпретаторы</h3><p>Все шесть интерпретаторов называют свой парсер «в стиле PEG», но им <b>никогда не нужно откатываться</b>. Каждый упорядоченный выбор решается <b>заглядыванием</b> на один-два токена вперёд. Это работает, потому что альтернативы MAP начинаются с разных токенов (<code>def</code>, <code>if</code>, <code>for</code>) или различаются по второму токену (<code>NAME '='</code>). Получается то же дерево, построенное без отката и мемоизации.</p>"
+    },
+    {
+     "t": "code",
+     "id": "parser.stmt",
+     "title": "операторы: упорядоченный выбор заглядыванием вперёд"
+    },
+    {
+     "t": "html",
+     "html": "<p>Каждое правило грамматики — это одна функция, которая <b>возвращает узел AST</b>. Приоритет определяется тем, какое правило какое вызывает: <code>comparison</code> вызывает <code>sum</code>, поэтому <code>+</code> связывает сильнее, чем <code>&lt;=</code>.</p>"
+    },
+    {
+     "t": "code",
+     "id": "parser.comparison",
+     "title": "comparison и sum строят узлы Compare / BinOp"
+    },
+    {
+     "t": "code",
+     "id": "parser.error",
+     "title": "как выбрасывается SyntaxError"
+    },
+    {
+     "t": "html",
+     "html": "<h3>Неверные программы</h3><p>Каждая программа ниже прошла через настоящие лексер и парсер. Сообщение — ровно то, что печатает <code>main.py</code>, а «останавливается на» — токен, на который смотрел парсер, когда сдался.</p>"
+    },
+    {
+     "t": "errgrid",
+     "items": [
+      {
+       "id": "err_parse_missing_colon",
+       "msg": "MAP: ParseError: SyntaxError: expected ':' after if-condition [line 2]",
+       "cpy": "CPython 3.14: SyntaxError: expected ':'",
+       "where": "строка 2, столбец 14"
+      },
+      {
+       "id": "err_parse_unclosed_paren",
+       "msg": "MAP: ParseError: SyntaxError: expected ')' after arguments [line 2]",
+       "cpy": "CPython 3.14: SyntaxError: '(' was never closed",
+       "where": "строка 2, столбец 1"
+      },
+      {
+       "id": "err_parse_def_no_paren",
+       "msg": "MAP: ParseError: SyntaxError: expected '(' after function name [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: expected '('",
+       "where": "строка 1, столбец 13"
+      },
+      {
+       "id": "err_parse_double_equal",
+       "msg": "MAP: ParseError: SyntaxError: unexpected token '=' ('=') [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "строка 1, столбец 5"
+      },
+      {
+       "id": "err_parse_missing_indent",
+       "msg": "MAP: ParseError: SyntaxError: expected indented block [line 2]",
+       "cpy": "CPython 3.14: IndentationError: expected an indented block after 'if' statement on line 1",
+       "where": "строка 2, столбец 1"
+      },
+      {
+       "id": "err_parse_dangling_op",
+       "msg": "MAP: ParseError: SyntaxError: unexpected token 'NEWLINE' ('\\n') [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "строка 1, столбец 8"
+      },
+      {
+       "id": "err_lex_bad_dedent",
+       "msg": "MAP: LexerError: IndentationError: unindent does not match any outer indentation level [line 4]",
+       "cpy": "CPython 3.14: IndentationError: unindent does not match any outer indentation level",
+       "where": "строка 4"
+      },
+      {
+       "id": "err_lex_bad_char",
+       "msg": "MAP: LexerError: SyntaxError: unexpected character '$' [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "строка 1"
+      }
+     ]
+    }
+   ],
+   "videos": [
+    {
+     "file": "backtracking",
+     "caption": "Упорядоченный выбор и откат"
+    },
+    {
+     "file": "packrat",
+     "caption": "Мемоизация packrat"
+    },
+    {
+     "file": "recursive_descent",
+     "caption": "Рекурсивный спуск в main.py"
+    }
+   ],
+   "notes": {
+    "python": "Один метод на правило (<code>_stmt</code>, <code>_comparison</code>, <code>_sum</code> …), каждый возвращает узел-dataclass.",
+    "rust": "Каждое правило возвращает <code>PResult&lt;Expr&gt;</code>; оператор <code>?</code> пробрасывает SyntaxError дальше.",
+    "c++": "Каждое правило строит большой <code>ASTNode</code> и заполняет <code>a</code>/<code>b</code>/<code>strVal</code>.",
+    "java": "Каждое правило возвращает record, например <code>Compare</code>; <code>expect</code> выбрасывает <code>ParseError</code>.",
+    "clojure": "Состояние парсера — atom <code>{:tokens :pos}</code>; каждое правило возвращает record.",
+    "llvm": "Парсер такой же, как в main.py: компилятор начинает работу только после построения AST."
+   },
+   "term": "Парсер (синтаксический анализ, PEG)",
+   "meta": "~45 мин · ★★★",
+   "checkpoint": {
+    "try": "добавьте <code>!=</code> рядом с <code>==</code> в правило <code>comparison</code>.",
+    "break": "удалите двоеточие после <code>if</code>. Совпадает ли ваше сообщение с тем, что выше?",
+    "have": "Ваш интерпретатор знает, правильно ли построено предложение. Что оно значит, он пока не знает."
+   }
+  },
+  {
+   "id": "ast",
+   "title": "Скелет: ваша программа в виде дерева",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Возьмите предложение и уберите знаки препинания. Останется скелет: кто что с кем делает. AST — это скелет вашей программы.</p><p><b>Абстрактное синтаксическое дерево</b> (AST) хранит только то, что важно для выполнения программы. В нём нет скобок, двоеточий и отступов: они нужны лишь для того, чтобы придать дереву форму. Каждый узел — небольшой класс:</p>"
+    },
+    {
+     "t": "code",
+     "id": "ast.base",
+     "title": "базовый класс и корень"
+    },
+    {
+     "t": "code",
+     "id": "ast.expr",
+     "title": "узлы выражений"
+    },
+    {
+     "t": "code",
+     "id": "ast.stmt",
+     "title": "узлы операторов"
+    },
+    {
+     "t": "html",
+     "html": "<p><b>Паттерн «Компоновщик» (Composite).</b> Узел может содержать другие узлы (у <code>FuncDef</code> есть <code>body</code>, у <code>BinOp</code> — <code>left</code>/<code>right</code>), и код одинаково обращается с отдельным узлом и целым поддеревом. <code>Name</code> и литералы — это листья.</p><details class='predict'><summary>Прежде чем листать дальше: нарисуйте дерево для <code>fib_rec(n - 1) + fib_rec(n - 2)</code>.</summary><p><code>BinOp '+'</code> с двумя детьми. Каждый ребёнок — <code>Call</code> к <code>Name('fib_rec')</code>, аргумент которого — <code>BinOp '-'</code> из <code>Name('n')</code> и <code>IntLiteral</code>. Найдите его в дереве A ниже.</p></details><h3>Деревья для A и B</h3><p>Вот что печатает <code>python3 main.py --ast</code>:</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "ast_a",
+       "title": "Программа A"
+      },
+      {
+       "t": "shared",
+       "id": "ast_b",
+       "title": "Программа B"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<h3>Обход дерева: «Посетитель» (Visitor)</h3><p>Чтобы что-то сделать с каждым узлом (напечатать, проверить, выполнить), нужен код для каждого типа узла. <b>Паттерн «Посетитель»</b> выносит этот код из классов узлов: у посетителя есть по функции на каждый тип узла, а диспетчер выбирает нужную:</p>"
+    },
+    {
+     "t": "code",
+     "id": "eval.dispatch",
+     "title": "диспетчер: выбор обработчика по типу узла"
+    },
+    {
+     "t": "html",
+     "html": "<p>Обработчик узла посещает своих детей, снова вызывая диспетчер, — так получается обход в глубину. Сам вычислитель — это <b>паттерн «Интерпретатор»</b>: у каждой конструкции грамматики есть класс, и вычислить дерево значит попросить каждый узел вычислить себя.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "tree_a",
+     "caption": "Программа A: построение дерева"
+    },
+    {
+     "file": "walk_a",
+     "caption": "Программа A: обход в глубину"
+    }
+   ],
+   "notes": {
+    "python": "Подклассы <code>@dataclass</code> от <code>ASTNode</code>; диспетчеризация через <code>getattr(self, \"_exec_\" + ИмяКласса)</code>.",
+    "rust": "Дерево из enum; дети — это <code>Box&lt;Expr&gt;</code> и <code>Vec&lt;Stmt&gt;</code>; обход — это <code>match</code>.",
+    "c++": "Одна большая структура <code>ASTNode</code> с меткой <code>NodeType</code>, хранится через <code>shared_ptr</code>; обход — это <code>switch</code>. Отдельных классов для выражений и операторов нет.",
+    "java": "<code>sealed interface Node</code> + records; <code>switch</code> с шаблонами обязан обработать все случаи.",
+    "clojure": "<code>defrecord</code> на каждый узел; обход — это <code>defmulti exec-node</code> с выбором по <code>type</code>.",
+    "llvm": "Те же dataclass; посетитель — это <code>CodeGen</code>, чьи методы <code>st_*</code>/<code>ex_*</code> генерируют IR вместо выполнения узла."
+   },
+   "term": "AST и обход дерева",
+   "meta": "~20 мин · ★★☆",
+   "checkpoint": {
+    "try": "напечатайте своё дерево для программы B и сравните с деревом выше.",
+    "break": "уберите обработчик одного типа узлов. Что сделает диспетчер, встретив такой узел?",
+    "have": "Ваша программа — дерево, которое можно обойти. Пока ничего не выполняется."
+   }
+  },
+  {
+   "id": "semantic",
+   "title": "Смысл: на что ссылается каждое имя?",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<details class='predict'><summary>Что напечатает эта программа?<pre>x = 1\ndef f():\n    print(x)\n    x = 2\n\nf()</pre></summary><p>Большинство отвечает <b>1</b>. CPython выбрасывает <code>UnboundLocalError</code>, а MAP печатает 1. Эта глава объясняет почему.</p></details><p>Представьте окружение как стикер. На нём несколько имён с их значениями и стрелка на стикер позади. Чтобы найти имя, вы читаете свой стикер, потом тот, что позади, и так далее.</p><p>Программа может быть грамматически правильной и всё равно ошибочной. <b>Семантический анализ</b> — это проход по AST после разбора и до выполнения, который выясняет, что означают имена, и отвергает то, что можно отвергнуть заранее.</p><h3>Разрешение областей видимости: локальное или глобальное?</h3><p>Правило Python: <b>имя, которому где-либо в теле функции присваивается значение, локально для всей функции.</b> Параметры тоже локальны. Любое другое имя ищется в глобальной области, а затем среди встроенных функций. Для программы B:</p><div class='tablewrap'><table><tr><th>область</th><th>имя</th><th>вид</th></tr><tr><td><code>global</code></td><td><code>print</code></td><td>встроенная</td></tr><tr><td><code>global</code></td><td><code>range</code></td><td>встроенная</td></tr><tr><td><code>global</code></td><td><code>fib_iter</code></td><td>глобальная (функция)</td></tr><tr><td><code>fib_iter</code></td><td><code>n</code></td><td>локальная (параметр)</td></tr><tr><td><code>fib_iter</code></td><td><code>a</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>b</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>i</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>temp</code></td><td>локальная</td></tr></table></div><p>В программе A <code>fib_rec</code> используется внутри собственного тела, но там ей ничего не присваивается, поэтому она <b>глобальная</b>. Так рекурсия находит функцию. Таблица вычислена по настоящему AST функцией <code>capture.scope_table</code>; в самом MAP семантического прохода нет.</p><h3>Ошибки до запуска и во время выполнения</h3><div class='tablewrap'><table><tr><th>программа</th><th>CPython 3.14</th><th>MAP</th></tr><tr><td><pre>return 5</pre></td><td>SyntaxError: 'return' outside function</td><td>InternalError: 5</td></tr><tr><td><pre>def f(n, n):\n    return n\n\nprint(f(1, 2))</pre></td><td>SyntaxError: duplicate argument 'n' in function definition</td><td>2</td></tr><tr><td><pre>x = 1\ndef f():\n    print(x)\n    x = 2\n\nf()</pre></td><td>UnboundLocalError: cannot access local variable 'x' where it is not associated with a value</td><td>1</td></tr><tr><td><pre>def f():\n    return g()\n\ndef g():\n    return 1\n\nprint(f())</pre></td><td>1</td><td>1</td></tr></table></div><ul><li><code>'return' outside function</code> и <code>duplicate argument</code> компилятор CPython ловит <b>до запуска какого-либо кода</b>. Ни у одного из шести интерпретаторов нет полного семантического прохода. MAP всё равно выполняет первую программу: сигнал возврата долетает до самого верха и выводится как InternalError. Повторяющийся параметр он молча принимает.</li><li><code>UnboundLocalError</code>: CPython при компиляции решил, что <code>x</code> локальна в <code>f</code> (ей присваивается значение в строке 4), поэтому чтение в строке 3 не удаётся. В MAP такого прохода нет. Поиск в окружении поднимается до глобальной <code>x</code> и печатает 1 — это известное отличие.</li><li><b>NameError нельзя обнаружить заранее.</b> В последней программе <code>f</code> упоминает <code>g</code> раньше, чем <code>g</code> появляется. Когда <code>f()</code> выполняется, <code>g</code> уже определена. Существует ли глобальное имя, зависит от того, что уже выполнилось (определения могут быть условными), поэтому проверка должна происходить во время самого поиска.</li></ul>"
+    },
+    {
+     "t": "code",
+     "id": "env.get",
+     "title": "Environment: где выбрасывается NameError (во время выполнения)"
+    }
+   ],
+   "videos": [
+    {
+     "file": "scope",
+     "caption": "Разрешение областей видимости"
+    }
+   ],
+   "notes": {
+    "python": "Семантического прохода нет; <code>Environment.get</code> идёт по цепочке родителей и выбрасывает NameError, когда они заканчиваются.",
+    "rust": "Семантического прохода нет; <code>Env::get</code> идёт по цепочке родителей, как main.py.",
+    "c++": "Семантического прохода нет; <code>Environment::get</code> идёт по цепочке родителей и выбрасывает ошибку выполнения.",
+    "java": "Семантического прохода нет; <code>return</code> на верхнем уровне превращается в SyntaxError во время выполнения в <code>Interpreter.run</code>. Особенность Java: <code>None</code> — это <code>null</code>, поэтому при поиске нужен <code>containsKey</code>, а не <code>get</code>.",
+    "clojure": "Семантического прохода нет; <code>return</code> на верхнем уровне проявляется как InternalError.",
+    "llvm": "Единственная версия с предварительным проходом: <code>_scan</code> собирает присваиваемые имена, чтобы решить, что станет локальным (alloca), а что — глобальным слотом; ещё не определённый глобальный слот при загрузке выбрасывает NameError."
+   },
+   "term": "Семантический анализ",
+   "meta": "~15 мин · ★★☆",
+   "checkpoint": {
+    "try": "напишите функцию, которая перечисляет локальные имена функции: её параметры и все имена, которым присваивается значение в теле.",
+    "break": "запустите программу с <code>x = 1</code> из начала главы. Ваш интерпретатор печатает 1, как MAP, или падает, как CPython?",
+    "have": "Вы знаете, где живёт каждое имя. Дальше мы дадим им значения."
+   }
+  },
+  {
+   "id": "memory",
+   "title": "Оживление: фреймы, вызовы, return",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Здесь помогут два образа. Стек вызовов — это стопка тарелок: каждый вызов кладёт тарелку сверху, каждый возврат её снимает. <code>return</code> — аварийный выход: он проскакивает все комнаты между вами и дверью.</p><p>Вычислитель обходит AST и делает то, что говорит каждый узел. Во время работы память состоит из двух частей — тех же, что рисует Python Tutor:</p><ul><li><b>Фреймы</b> (слева на видео): по одному <code>Environment</code> на каждый активный вызов, связывающему имена со значениями. Глобальный фрейм создаётся первым.</li><li><b>Объекты</b> (справа): значения, на которые ссылаются переменные, например объекты функций. Небольшие целые показаны прямо в ячейке.</li></ul><h3>Вызов функции</h3><ol><li>Вычислить вызываемую функцию и аргументы.</li><li>Создать <b>новый Environment, родителем которого служит замыкание функции</b> (для функций верхнего уровня в MAP это глобальный фрейм).</li><li>Связать каждый параметр с его аргументом.</li><li>Выполнить тело. <code>return</code> посылает сигнал возврата со значением, который выходит из вложенных блоков <code>if</code>/<code>for</code> к месту вызова.</li><li>Перехватить его, выбросить фрейм и вернуть значение.</li></ol>"
+    },
+    {
+     "t": "code",
+     "id": "eval.call",
+     "title": "вычисление вызова (Call)"
+    },
+    {
+     "t": "code",
+     "id": "eval.return_signal",
+     "title": "сигнал возврата"
+    },
+    {
+     "t": "code",
+     "id": "eval.control",
+     "title": "return, if и for"
+    },
+    {
+     "t": "html",
+     "html": "<details class='predict'><summary>Сначала угадайте: какой глубины достигнет стек для <code>fib_rec(4)</code>? Потом посмотрите видео ниже.</summary><p><b>Стек вызовов</b> — это цепочка активных фреймов. В MAP это не отдельная структура данных: каждый вызов — это вызов в языке-хосте, поэтому его держит собственный стек хоста. Программа A доходит до глубины 4 фрейма (от <code>fib_rec(4)</code> до <code>fib_rec(1)</code>, плюс глобальный).</p></details><p>Видео показывают по одному шагу на каждую выполненную строку; их записывает подкласс <code>Interpreter</code> в <code>capture.py</code>, который только наблюдает, а вычисляет сам main.py. Программа A занимает 39 шагов, программа B — 25. Прямо перед возвратом из <code>fib_iter(6)</code> её фрейм равен <code>{\"n\": \"6\", \"a\": \"5\", \"b\": \"8\", \"i\": \"6\", \"temp\": \"8\"}</code>, а возвращаемое значение — <b>8</b>.</p><p>В видео следите, как стек растёт, а потом сворачивается обратно до 3.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "environments",
+     "caption": "Окружения и вызовы"
+    },
+    {
+     "file": "memory_a",
+     "caption": "Программа A по шагам (память)"
+    },
+    {
+     "file": "memory_b",
+     "caption": "Программа B по шагам (память)"
+    }
+   ],
+   "notes": {
+    "python": "<code>return</code> выбрасывает <code>ReturnSignal</code>, а <code>_eval_Call</code> его перехватывает.",
+    "rust": "Фреймы <code>Rc&lt;Env&gt;</code>; <code>return</code> — это <code>Err(Flow::Return(v))</code>, который пробрасывается через <code>?</code>.",
+    "c++": "<code>make_shared&lt;Environment&gt;(closure)</code>; <code>throw ReturnException</code>.",
+    "java": "<code>ReturnSignal</code> — RuntimeException без трассировки стека, поэтому он дешёвый.",
+    "clojure": "<code>ex-info</code> с данными <code>:return-signal</code>, который перехватывается и распаковывается.",
+    "llvm": "Каждая функция MAP становится нативной функцией LLVM: <code>return</code> — настоящая инструкция <code>ret</code>, локальные переменные — слоты <code>alloca</code>, а фреймы хранит нативный стек."
+   },
+   "term": "Вычисление и память",
+   "meta": "~30 мин · ★★★",
+   "checkpoint": {
+    "try": "запустите программы A и B. Они должны напечатать 3 и 8.",
+    "break": "забудьте перехватить сигнал возврата в обработчике Call. Что случится с первым <code>return</code>?",
+    "have": "Ваш интерпретатор выполняет настоящие программы. Программа A печатает 3."
+   }
+  },
+  {
+   "id": "errors",
+   "title": "Музей ошибок",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Добро пожаловать в музей ошибок. Каждый экспонат — программа, которая пошла не так, и у каждого этапа свой способ сказать «нет».</p><p>Любой этап может отвергнуть программу, и каждый выбрасывает свой класс ошибки. Все они наследуют один базовый класс с сообщением и номером строки:</p>"
+    },
+    {
+     "t": "code",
+     "id": "errors.classes",
+     "title": "классы ошибок"
+    },
+    {
+     "t": "html",
+     "html": "<div class='tablewrap'><table><tr><th>этап</th><th>ошибка</th><th>где выбрасывается в main.py</th><th>настоящее сообщение</th></tr><tr><td>лексер</td><td><code>IndentationError</code></td><td><code>Lexer._handle_indentation</code></td><td><code>LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</code></td></tr><tr><td>лексер</td><td><code>SyntaxError</code></td><td><code>Lexer._read_operator</code></td><td><code>LexerError: SyntaxError: unexpected character '$' [line 1]</code></td></tr><tr><td>парсер</td><td><code>SyntaxError</code></td><td><code>Parser._expect / Parser._err</code></td><td><code>ParseError: SyntaxError: expected ':' after if-condition [line 2]</code></td></tr><tr><td>семантика</td><td><code>'return' outside function</code></td><td><code>(нет прохода) → InternalError</code></td><td><code>InternalError: 5</code></td></tr><tr><td>выполнение</td><td><code>NameError</code></td><td><code>Environment.get</code></td><td><code>PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (операнды)</code></td><td><code>Interpreter._apply_binop</code></td><td><code>PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (число аргументов)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (не вызываемый)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: 'int' object is not callable [line 2]</code></td></tr><tr><td>выполнение</td><td><code>RecursionError</code></td><td><code>стек Python-хоста → except Exception в main()</code></td><td><code>InternalError: maximum recursion depth exceeded</code></td></tr><tr><td>выполнение</td><td><code>ZeroDivisionError</code></td><td><code>Interpreter._apply_binop</code></td><td>в MAP невозможна: нет <code>/</code>, <code>//</code> и <code>%</code></td></tr></table></div><p><b>Как сообщается об ошибке.</b> Ошибка выполнения, выброшенная глубоко в рекурсии, проходит через все вызовы (ни один её не перехватывает), пока её не перехватит <code>main()</code> и не напечатает <code>Вид: сообщение [line N]</code>:</p>"
+    },
+    {
+     "t": "code",
+     "id": "errors.main",
+     "title": "main(): единственное место, где сообщается об ошибках"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "err_rt_name_error_deep",
+       "title": "examples/errors/rt_name_error_deep.py"
+      },
+      {
+       "t": "shared",
+       "id": "rt_name_error_deep_out",
+       "title": "вывод MAP"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<p><b>Строка и столбец.</b> Каждый токен хранит <code>line</code> и <code>col</code>, но ошибка сообщает только строку, а столбец теряется. Чтобы сообщать столбец, нужно передать столбец токена в ошибку и напечатать строку исходника с <code>^</code> под ней, как делает CPython:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "cpython_traceback",
+     "title": "CPython 3.14, последняя строка трассировки"
+    },
+    {
+     "t": "html",
+     "html": "<p><b>RecursionError.</b> MAP не считает вызовы. Бесконечная рекурсия исчерпывает стек Python-<i>хоста</i>, и <code>main()</code> сообщает об этом как об <code>InternalError</code>. Java перехватывает <code>StackOverflowError</code>, версия llvm считает вызовы до <code>MAX_DEPTH = 4000</code>, а Rust, C++ и Clojure просто падают. Точная версия держит счётчик глубины в вызове и выбрасывает ошибку на 1000, как CPython.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "error_stack",
+     "caption": "Ошибка поднимается по стеку вызовов"
+    }
+   ],
+   "notes": {
+    "python": "<code>PyError(Exception)</code> с подклассами <code>LexerError</code>, <code>ParseError</code> и <code>PyRuntimeError</code>.",
+    "rust": "Ошибки — это значения: <code>enum PyError</code> возвращается через <code>Result</code>, а не выбрасывается. Почему Rust падает на глубокой рекурсии, а Java выбрасывает RecursionError? Переполнение стека в Rust обрывает процесс: перехватывать нечего.",
+    "c++": "Иерархия классов под <code>EduPyError : std::exception</code>.",
+    "java": "<code>PyError extends RuntimeException</code> и подклассы. Почему Java выбрасывает RecursionError, а Rust падает? JVM бросает <code>StackOverflowError</code>, и интерпретатор его перехватывает.",
+    "clojure": "Отображения <code>ex-info</code> с <code>:error-type</code> и <code>:line</code>.",
+    "llvm": "Те же классы <code>PyError</code>; нативный код поднимает флаг ошибки через runtime, а каждый вызов, который может завершиться неудачей, проверяет его и раскручивает стек."
+   },
+   "term": "Ошибки",
+   "meta": "~20 мин · ★★☆",
+   "checkpoint": {
+    "try": "вызовите функцию с неверным числом аргументов и проверьте, что номер строки правильный.",
+    "break": "уберите базовый случай из <code>fib_rec</code>. Кто его остановит: ваш интерпретатор или хост?",
+    "have": "Ваш интерпретатор падает вежливо: с видом ошибки и номером строки."
+   }
+  },
+  {
+   "id": "builtins",
+   "title": "Через границу: print и range",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Представьте розетки. Программа на MAP включается в них, а ток идёт из языка-хоста.</p><p>Встроенная функция (builtin) написана на <b>языке-хосте</b>, а не на MAP. MAP нужны две: <code>print</code> и <code>range</code>. Каждый интерпретатор определяет 14 и регистрирует их одинаково — как обычные значения в глобальном Environment.</p>"
+    },
+    {
+     "t": "code",
+     "id": "builtins.print",
+     "title": "print"
+    },
+    {
+     "t": "code",
+     "id": "builtins.range",
+     "title": "range — сразу возвращает готовый список"
+    },
+    {
+     "t": "code",
+     "id": "builtins.registry",
+     "title": "реестр"
+    },
+    {
+     "t": "code",
+     "id": "builtins.seed",
+     "title": "заносятся в глобальную область при запуске интерпретатора"
+    },
+    {
+     "t": "html",
+     "html": "<p>Когда выполняется узел <code>Call</code>, вызываемая функция ищется как любая переменная. Если значение — вызываемый объект хоста, а не функция MAP, он вызывается напрямую со списком вычисленных аргументов. Именно здесь код MAP переходит в нативный код. Python Tutor скрывает встроенные функции во фреймах, и видео тоже.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "native",
+     "caption": "Переход в нативный код"
+    }
+   ],
+   "notes": {
+    "python": "Обычные функции Python в словаре <code>BUILTINS</code>, распознаются через <code>callable()</code>.",
+    "rust": "Встроенные функции хранятся по имени (<code>Value::Builtin(String)</code>) и выбираются через <code>match</code> по строке.",
+    "c++": "Вектор пар имя / указатель на функцию, регистрируется при создании Interpreter.",
+    "java": "<code>reg(имя, лямбда)</code> в <code>LinkedHashMap</code>; этот range проверяет шаг 0.",
+    "clojure": "Обычные функции Clojure в отображении, распознаются через <code>fn?</code>.",
+    "llvm": "Встроенные функции остаются в Python: скомпилированный код обращается обратно к runtime через <code>rt_call_builtin</code>."
+   },
+   "term": "Встроенные функции",
+   "meta": "~15 мин · ★☆☆",
+   "checkpoint": {
+    "try": "добавьте третью встроенную функцию, например <code>abs</code> или <code>max</code>.",
+    "break": "напишите <code>print = 1</code>, а затем вызовите <code>print(2)</code>. Какую ошибку вы получите?",
+    "have": "Это весь конвейер. Вы написали Python."
+   }
+  },
+  {
+   "id": "bytecode",
+   "title": "Бонус: настоящий байткод CPython",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>CPython не обходит дерево. Он компилирует каждую функцию в <b>байткод</b> — плоский список инструкций для стековой машины, — и управление потоком превращается в <b>переходы</b>. Ниже — <code>dis.dis</code> для обеих функций, запущенный в <b>Python 3.14</b>. Байткод — деталь реализации: он отличается между версиями Python, поэтому в 3.12 или 3.13 вы увидите другие имена инструкций.</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "dis_fib_rec",
+       "title": "fib_rec — python3.14 -m dis"
+      },
+      {
+       "t": "shared",
+       "id": "dis_fib_iter",
+       "title": "fib_iter — python3.14 -m dis"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<ul><li><code>if n &lt;= 1:</code> превращается в <code>COMPARE_OP</code>, за которым следует <code>POP_JUMP_IF_FALSE … (to L1)</code>; он пропускает <code>return n</code>, когда условие ложно.</li><li><code>for</code> превращается в <code>GET_ITER</code>, затем <code>FOR_ITER (to L3)</code> в начале цикла (выход, когда итератор исчерпан) и <code>JUMP_BACKWARD (to L2)</code> в конце.</li></ul><h3>Интерпретаторы обхода дерева обходятся без переходов</h3><p>Интерпретатору, который обходит дерево, переходы не нужны: узел <code>If</code> выполняется <code>if</code> хоста, а узел <code>For</code> — <code>for</code> хоста. Структура дерева <i>и есть</i> управление потоком. Переходы нужны только компилятору — как в CPython и в версии на LLVM.</p><p><code>if</code> и <code>for</code> в выбранном интерпретаторе вы уже видели в <a href='#memory'>главе 6</a>.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "bytecode_b",
+     "caption": "Байткод CPython для программы B"
+    }
+   ],
+   "notes": {
+    "python": "Обход дерева: <code>if</code> и <code>for</code> — это <code>if</code> и <code>for</code> хоста.",
+    "rust": "Обход дерева: <code>if</code> и <code>for</code> — это <code>if</code> и <code>for</code> Rust внутри <code>match</code>.",
+    "c++": "Обход дерева: <code>if</code> и <code>for</code> — это <code>if</code> и range-<code>for</code> C++ внутри <code>switch</code>.",
+    "java": "Обход дерева: <code>if</code> и <code>for</code> — операторы Java внутри <code>switch</code> с шаблонами.",
+    "clojure": "Обход дерева: <code>if</code> и <code>doseq</code> внутри каждого <code>defmethod</code>.",
+    "llvm": "Версия на LLVM тоже компилирует, поэтому, как CPython, генерирует базовые блоки и ветвления (переходы): <code>cbranch</code> для <code>if</code>, а для <code>for … in range</code> — заголовок цикла и обратную дугу."
+   },
+   "meta": "~15 мин · ★★☆"
+  },
+  {
+   "id": "out_of_scope",
+   "title": "Пакеты расширений",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Считайте всё, что ниже, пакетами расширений, которые ждут, когда вы их соберёте.</p><p>Это руководство охватывает только ядро языка. В MAP <b>нет</b> стандартной библиотеки, нет <code>import</code> и модулей, нет классов и объектов, нет API операционной системы (файлов, сокетов, процессов, переменных окружения). В нём также нет <code>while</code>, <code>try/except</code>, строк, списков, чисел с плавающей точкой и <code>/ // %</code>. Большинство из этого есть в шести полных версиях и намеренно оставлено вне MAP. Каждая такая возможность — это новый токен, новое правило грамматики, новый узел и новая функция вычисления, построенные ровно теми же шагами, что и выше.</p>"
+    }
+   ],
+   "videos": [],
+   "notes": {},
+   "term": "За рамками"
+  },
+  {
+   "id": "your_turn",
+   "title": "Ваш ход: напишите свой Python",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Вы увидели все части. Теперь соберите их сами. Выберите язык-хост: один из шести или тот, которого здесь ещё нет (Go, C#, Haskell, JavaScript, Zig …). Затем пройдите руководство по порядку, по одному этапу за раз:</p><ol class='checklist'><li><a href='#tokenizer'>Токенизатор</a>: цикл сканера и стек отступов, выдающий INDENT и DEDENT.</li><li><a href='#parser'>Парсер</a>: по одной функции рекурсивного спуска на правило грамматики, решение по одному-двум токенам вперёд.</li><li><a href='#ast'>AST</a>: по типу узла на каждую конструкцию и диспетчер, выбирающий обработчик для узла.</li><li><a href='#semantic'>Окружения</a>: <code>{vars, parent}</code>, поиск поднимается по цепочке родителей.</li><li><a href='#memory'>Вызовы и return</a>: новое окружение на каждый вызов и сигнал возврата, который раскручивается до места вызова.</li><li><a href='#errors'>Ошибки</a>: по классу на этап, у каждого номер строки, сообщение — в одном месте.</li><li><a href='#builtins'>Встроенные функции</a>: <code>print</code> и <code>range</code> как функции хоста в глобальном окружении.</li></ol><h3>Финальная проверка</h3><ul><li>Программа A печатает <b>3</b>, а программа B — <b>8</b>.</li><li>Программы из <code>tutorial/examples/errors/</code> падают с сообщениями из глав 3 и 7.</li></ul><p>Застряли? Переключите список <b>Язык программирования</b> вверху: каждый этап показан в шести настоящих интерпретаторах, так что свой код можно сравнить с работающим. Когда MAP заработает, продолжайте с возможностями из главы 10: <code>while</code>, строки, списки, числа с плавающей точкой. Каждая из них — новый токен, правило грамматики, узел и функция вычисления, то есть ровно те шаги, которые вы уже знаете.</p><p><b>Удачи — и добро пожаловать в клуб тех, кто написал свой Python.</b></p>"
+    }
+   ],
+   "videos": [],
+   "notes": {}
   }
+ ]
 }

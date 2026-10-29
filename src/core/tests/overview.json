@@ -1,0 +1,12 @@
+[
+ {
+  "name": "program_a",
+  "source": "def fib_rec(n):\n    if n <= 1:\n        return n\n    return fib_rec(n - 1) + fib_rec(n - 2)\n\nprint(fib_rec(4))\n",
+  "expected": "3\n"
+ },
+ {
+  "name": "program_b",
+  "source": "def fib_iter(n):\n    if n <= 1:\n        return n\n    a = 0\n    b = 1\n    for i in range(2, n + 1):\n        temp = a + b\n        a = b\n        b = temp\n    return b\n\nprint(fib_iter(6))\n",
+  "expected": "8\n"
+ }
+]

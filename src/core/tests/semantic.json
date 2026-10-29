@@ -1,0 +1,22 @@
+[
+ {
+  "name": "late_binding",
+  "source": "def f():\n    return g()\n\ndef g():\n    return 1\n\nprint(f())\n",
+  "expected": "1\n"
+ },
+ {
+  "name": "unbound_local",
+  "source": "x = 1\ndef f():\n    print(x)\n    x = 2\n\nf()\n",
+  "expected": "1\n"
+ },
+ {
+  "name": "duplicate_parameter",
+  "source": "def f(n, n):\n    return n\n\nprint(f(1, 2))\n",
+  "expected": "2\n"
+ },
+ {
+  "name": "return_outside_function",
+  "source": "return 5\n",
+  "expected": "InternalError: 5\n"
+ }
+]

@@ -1,4 +1,8 @@
-<h1>404</h1>
-<p>The page "{{ path }}" does not exist.</p>
-
-<a href="/">Go Home</a>
+{% extends "base.html" %}
+{% block content %}
+<section class="not-found">
+    <h2>404</h2>
+    <p>{{ content.ui.not_found.replace('{path}', path) }}</p>
+    <a href="/{{ lang }}/make-a-python/">{{ content.ui.home }}</a>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+Program [line 1]
+  FuncDef name='fib_iter' params=['n']
+    If
+      test:
+        Compare op='<='
+          Name('n')
+          IntLiteral(1)
+      body:
+        Return
+          Name('n')
+    Assign target='a'
+      IntLiteral(0)
+    Assign target='b'
+      IntLiteral(1)
+    For target='i'
+      iter:
+        Call
+          Name('range')
+          IntLiteral(2)
+          BinOp op='+'
+            Name('n')
+            IntLiteral(1)
+      body:
+        Assign target='temp'
+          BinOp op='+'
+            Name('a')
+            Name('b')
+        Assign target='a'
+          Name('b')
+        Assign target='b'
+          Name('temp')
+    Return
+      Name('b')
+  ExprStmt
+    Call
+      Name('print')
+      Call
+        Name('fib_iter')
+        IntLiteral(6)

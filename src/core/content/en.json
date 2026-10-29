@@ -1,7 +1,690 @@
 {
-  "title": "Make a Python",
-  "print": {
-    "heading": "Print Example",
-    "description": "This snippet prints a simple message to the console."
+ "title": "Make a Python",
+ "subtitle": "Build a Python interpreter stage by stage. The code comes from the six interpreters in this project; the animations were rendered with manim-slides.",
+ "ui": {
+  "language": "Language",
+  "prog_language": "Programming language",
+  "chapters": "Chapters",
+  "animation": "Animation",
+  "porting": "Language spotlight: {lang}",
+  "run": "Run",
+  "run_tests": "Run tests",
+  "expected": "Expected",
+  "output": "Output",
+  "passed": "passed",
+  "failed": "failed",
+  "running": "Running…",
+  "tests_intro": "Each case is a program and the exact output it must print. Run them here against the reference interpreter, or feed the same sources to yours.",
+  "tests": "Tests",
+  "fallback": "{lang} has no separate equivalent here — showing the Python version",
+  "stops_at": "Stops at",
+  "teaser": "How a Python program runs, from source to output",
+  "open_video": "open video",
+  "recap_title": "The whole path",
+  "recap": "The full interpreter, chapter by chapter: from source code to output",
+  "theme": "Toggle light and dark mode",
+  "menu": "Toggle menu",
+  "footer": "© 2026 Make a Python",
+  "not_found": "The page \"{path}\" does not exist.",
+  "home": "Go home",
+  "code_in": "The code on this page is shown in",
+  "invite_title": "Build your own Python",
+  "invite_text": "<p>Every time you type <code>python3 script.py</code>, a program reads your code and brings it to life. That program isn't magic. By the end of this page, you'll have written one yourself.</p><pre>$ python3 main.py program_a.py\n3</pre><p>That 3 will be yours. Here's the recipe: follow the chapters in order, in any language you like. Programs A and B and the tests are your checkpoints, and the six interpreters on this page are there to compare with at every step.</p>",
+  "try_it": "Try it:",
+  "break_it": "Break it:",
+  "have_now": "What you have now:",
+  "guess_cpython": "Guess CPython's message, then click"
+ },
+ "chapters": [
+  {
+   "id": "overview",
+   "title": "Overview: the pipeline",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>An interpreter is a program that reads another program and runs it. MAP (\"Make A Python\") is a tiny subset of Python, with integers, booleans, <code>None</code>, variables, <code>+ - &lt; &lt;= ==</code>, <code>if/else</code>, <code>def/return</code>, recursion, <code>for … in range(…)</code>, and the builtins <code>print</code> and <code>range</code>. Small as it is, it already needs every stage of a real interpreter.</p><ol class='pipeline'><li><b>Source</b>: the program as one string.</li><li><b>Tokenizer</b>: turns characters into words like <code>DEF</code>, <code>NAME fib_rec</code> or <code>INDENT</code>.</li><li><b>Parser</b>: checks the words against the grammar and builds a tree.</li><li><b>AST</b>: the tree of node objects (<code>FuncDef</code>, <code>If</code>, <code>BinOp</code> …).</li><li><b>Semantic analysis</b>: decides which names are local or global, and rejects programs that are wrong without running them.</li><li><b>Tree-walk evaluation + memory</b>: visits the tree, creating frames and values.</li><li><b>Output</b>: what <code>print</code> writes.</li></ol><p>Real CPython takes a side road after the AST: it compiles the tree to <b>bytecode</b> and runs that on a virtual machine. MAP never makes bytecode; it walks the tree directly.</p>"
+    },
+    {
+     "t": "image",
+     "light": "img/pipeline-programing_languages_light.png",
+     "dark": "img/pipeline-programing_languages_dark.png",
+     "alt": "The phases of a compiler: lexical, syntax and semantic analysis, intermediate code, optimization and code generation"
+    },
+    {
+     "t": "html",
+     "html": "<p>Two running examples are followed through every chapter:</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "program_a",
+       "title": "Program A — fib_rec(4)"
+      },
+      {
+       "t": "shared",
+       "id": "program_b",
+       "title": "Program B — fib_iter(6)"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<p>Running them with the reference interpreter: <code>python3 python_interpreter_in_python/main.py tutorial/examples/program_a.py</code> prints <b>3</b>, and program B prints <b>8</b>.</p><h3>Six interpreters, one design</h3><p>The project contains the same interpreter written six times. Pick one with the <b>Programming language</b> selector at the top: every code block on this page then shows that interpreter. What they all share is the pipeline above; an indent stack that produces INDENT and DEDENT; a recursive-descent parser with the same precedence chain; roughly 23 node types named after CPython's <code>ast</code> module; an <code>Environment{vars, parent}</code>; errors carrying a line number; and the same 14 builtins. How each language expresses them:</p><details><summary>Compare the six implementations</summary><div class='tablewrap'><table><tr><th></th><th>Python</th><th>Rust</th><th>C++</th><th>Java</th><th>Clojure</th><th>LLVM</th></tr><tr><td>Token type</td><td><code>TT(Enum)</code> + <code>@dataclass Token</code></td><td><code>enum TokKind</code> with payload + <code>Tag</code></td><td><code>enum class TT</code> + tagged union <code>TokenValue</code></td><td><code>enum TT</code> + <code>record Token</code></td><td>keywords + <code>defrecord Token</code></td><td>same as Python, table-driven operators</td></tr><tr><td>Parser</td><td>recursive descent, 1–2 token lookahead</td><td>same</td><td>same</td><td>same</td><td>same, state in an atom</td><td>same</td></tr><tr><td>AST</td><td><code>@dataclass</code> subclasses</td><td><code>enum Expr / enum Stmt</code>, <code>Box</code></td><td>one fat <code>ASTNode</code> + <code>NodeType</code> tag</td><td><code>sealed interface Node</code> + records</td><td><code>defrecord</code> per node</td><td>same dataclasses</td></tr><tr><td>Dispatch</td><td><code>getattr(self, \"_eval_\"+cls)</code></td><td><code>match</code></td><td><code>switch(node-&gt;type)</code></td><td>pattern <code>switch</code></td><td><code>defmulti</code> on type</td><td><code>getattr</code> → emits IR</td></tr><tr><td>Environment</td><td>dict + parent</td><td><code>Rc&lt;Env&gt;</code>, <code>RefCell&lt;HashMap&gt;</code></td><td><code>shared_ptr&lt;Environment&gt;</code></td><td><code>HashMap</code> + parent</td><td><code>Env{vars: atom, parent}</code></td><td><code>alloca</code> locals + global slots</td></tr><tr><td>return</td><td><code>raise ReturnSignal</code></td><td><code>Err(Flow::Return(v))</code></td><td><code>throw ReturnException</code></td><td><code>throw ReturnSignal</code></td><td><code>ex-info</code></td><td>native <code>ret</code></td></tr><tr><td>Errors</td><td>PyError(msg, line)</td><td>PyError enum, line</td><td>EduPyError, line</td><td>PyError, line</td><td>ex-info, line</td><td>PyError, line</td></tr><tr><td>Recursion limit</td><td>host limit → InternalError</td><td>none</td><td>none</td><td>StackOverflowError → RecursionError</td><td>none</td><td><code>MAX_DEPTH = 4000</code></td></tr></table></div><p>These six are only examples. The same design can be ported to any other language, but each implementation will differ: every language has its own way to express tokens, nodes, dispatch and errors.</p></details>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "pipeline",
+     "caption": "The pipeline"
+    }
+   ],
+   "notes": {
+    "python": "<code>python_interpreter_in_python/main.py</code> is the reference: the other five follow its structure function by function.",
+    "rust": "<code>python_interpreter_rust/src/main.rs</code>: the same pipeline with enums, <code>Result</code> and <code>Rc&lt;Env&gt;</code>; errors and <code>return</code> travel as values instead of exceptions.",
+    "c++": "<code>python_interpreter_cpp/main.cpp</code>: the same pipeline with a single fat <code>ASTNode</code>, <code>shared_ptr</code> environments and C++ exceptions.",
+    "java": "<code>python_interpreter_java/Main.java</code>: the same pipeline with records, a sealed <code>Node</code> interface and pattern-matching <code>switch</code>.",
+    "clojure": "<code>python_interpreter_clojure/main.clj</code>: the same pipeline with <code>defrecord</code> nodes, state in atoms and <code>defmulti</code> dispatch.",
+    "llvm": "<code>python_interpreter_llvm/main.py</code>: the same lexer, parser and AST as main.py, but instead of walking the tree it <b>compiles</b> it to LLVM IR and runs native code."
+   },
+   "meta": "~10 min · ★☆☆"
+  },
+  {
+   "id": "tokenizer",
+   "title": "Reading: turning characters into words",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Think of reading a sentence. Before you can understand it, you split it into words. The tokenizer does exactly that for your program.</p><p>The tokenizer (also called lexer or scanner) reads the source <b>one character at a time</b> and groups characters into <b>tokens</b>. The method is a hand-written scanner: a loop that asks for the next token until the end of the text. Each call looks at the current character and decides what kind of token starts there.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.loop",
+     "title": "the scanner loop"
+    },
+    {
+     "t": "code",
+     "id": "lexer.dispatch",
+     "title": "dispatch on the current character"
+    },
+    {
+     "t": "html",
+     "html": "<p>A token remembers its <b>type</b>, its <b>value</b> and <b>where it came from</b> (line and column). Error messages need that position later.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.token",
+     "title": "the token"
+    },
+    {
+     "t": "html",
+     "html": "<h3>INDENT and DEDENT</h3><p>Think of nested boxes: every box you open, you must close. INDENT opens a box, DEDENT closes one.</p><p>Python has no braces, so blocks come from leading whitespace. At the start of every line the lexer counts the spaces and compares the count with the top of a stack, <code>indent_stack</code>, which starts as <code>[0]</code>:</p><ul><li>more spaces than the top: push the new width and emit <code>INDENT</code></li><li>fewer spaces: pop and emit one <code>DEDENT</code> per popped level</li><li>after popping, the width must equal the new top, otherwise <code>IndentationError</code></li><li>blank lines and comment-only lines are skipped and never touch the stack.</li></ul><p>At the end of the file, every level still open gets a DEDENT. That is why INDENT and DEDENT always balance.</p>"
+    },
+    {
+     "t": "code",
+     "id": "lexer.indent",
+     "title": "handling indentation"
+    },
+    {
+     "t": "html",
+     "html": "<h3>Program A as tokens</h3><p>44 tokens, straight from <code>Lexer(source).tokenize()</code>:</p><details class='predict'><summary>Guess first: how many INDENT and how many DEDENT tokens does Program A have?</summary><p><b>2 of each.</b> One INDENT for the body of <code>fib_rec</code> and one for the body of <code>if</code>. Both close again, so there are 2 DEDENTs.</p></details>"
+    },
+    {
+     "t": "shared_html",
+     "id": "tokens_a",
+     "summary": "Show all 44 tokens"
+    }
+   ],
+   "videos": [
+    {
+     "file": "tokens_a",
+     "caption": "Program A token by token"
+    },
+    {
+     "file": "indent_b",
+     "caption": "INDENT and DEDENT in Program B"
+    }
+   ],
+   "notes": {
+    "python": "Tokens are a <code>TT</code> enum plus a <code>@dataclass Token</code>; errors are raised as <code>LexerError</code>.",
+    "rust": "Same algorithm; <code>Result&lt;(), PyError&gt;</code> instead of an exception; tokens are an <code>enum TokKind</code> that carries the value.",
+    "c++": "<code>std::vector&lt;int&gt; indent_stack_</code>; the token value is a hand-written tagged union <code>TokenValue</code>.",
+    "java": "<code>List&lt;Integer&gt;</code> stack; <code>record Token(TT type, Object value, int line, int col)</code>.",
+    "clojure": "All lexer state lives in one atom; the stack is a vector used with <code>conj</code>/<code>pop</code>.",
+    "llvm": "The lexer is the same as main.py; operators are looked up in the <code>_TWO_CHAR</code> and <code>_ONE_CHAR</code> tables."
+   },
+   "term": "Tokenizer",
+   "meta": "~30 min · ★★☆",
+   "checkpoint": {
+    "try": "add <code>!=</code> to your tokenizer.",
+    "break": "indent one line with a tab and the next with spaces. What happens?",
+    "have": "Your interpreter can read words. It can't understand sentences yet."
+   }
+  },
+  {
+   "id": "parser",
+   "title": "Grammar: do the words form a sentence?",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Think of a grammar teacher diagramming a sentence: subject here, verb there. The parser does the same with your tokens. It checks that they fit the grammar and draws the structure.</p><p>The parser checks that the tokens form a valid program and builds the tree. MAP's grammar written as a <b>PEG</b> (Parsing Expression Grammar):</p>"
+    },
+    {
+     "t": "shared",
+     "id": "grammar",
+     "title": "MAP grammar (subset of the EBNF comment in main.py:656)"
+    },
+    {
+     "t": "html",
+     "html": "<p>How to read it: <code>e1 e2</code> is a sequence, <code>e*</code> is \"zero or more\" (a while loop), <code>e?</code> is optional, and <code>e1 / e2</code> is an <b>ordered choice</b>. The parser tries <code>e1</code> first and only tries <code>e2</code> if <code>e1</code> fails. There is never any ambiguity, because the first alternative that succeeds wins.</p><div class='deepdive'><h3>Optional deep dive: Backtracking</h3><p>You can skip this part. None of the six interpreters backtracks, but it explains what \"PEG\" means.</p><p>When an alternative fails halfway, the parser must <b>rewind</b>. Before trying an alternative it saves the cursor position, and on failure it restores it:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "ordered_choice",
+     "title": "ordered choice by hand (the technique from peg.txt)"
+    },
+    {
+     "t": "html",
+     "html": "<p>Example: on <code>print(fib_rec(4))</code>, <code>assign</code> matches <code>NAME print</code>, then needs <code>'='</code> but finds <code>'('</code>. It fails, the cursor goes back to 0, and <code>expr_stmt</code> parses the whole line.</p><h3>Packrat memoization</h3><p>Backtracking can make the parser repeat work, for example in <code>comparison &lt;- sum '&lt;=' sum / sum</code>. Both alternatives start by parsing <code>sum</code> at the same position. A <b>packrat</b> parser keeps a memo table <code>(rule, position) → (node, end position)</code>, so each rule runs at most once per position and parsing stays linear:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "packrat",
+     "title": "packrat in a few lines"
+    },
+    {
+     "t": "html",
+     "html": "</div><aside class='history'><h3>History corner · Before PEG: CPython's LL(1) parser</h3><p>Picture Python 3.8. You type <code>f() = 1</code>. The parser looks at it and says: fine! Only a later stage notices the problem and complains: \"can't assign to function call\". Why did the parser let it through? Because of how it was built.</p><p>For almost 30 years CPython did not use a PEG. Until Python 3.8 its parser was generated by <b>pgen</b> from the file <code>Grammar/Grammar</code>, and it was an <b>LL(1)</b> parser:</p><ul><li><b>L</b>: it reads the tokens from <b>L</b>eft to right;</li><li><b>L</b>: it builds the <b>L</b>eftmost derivation (it always expands the leftmost rule first, top-down);</li><li><b>(1)</b>: it decides with exactly <b>1</b> token of lookahead.</li></ul><p>An LL(1) parser is table-driven and never backtracks. It keeps a stack of rules still to match, and a table maps <code>(rule on top of the stack, next token)</code> to exactly one production. If the cell is empty, the program is a SyntaxError.</p><p>That power has limits. The grammar cannot be left-recursive, and every choice must be decidable from one token. So some rules were written too loosely and repaired later: <code>f() = 1</code> parsed as a valid statement and was only rejected while building the AST (\"can't assign to function call\"). Parenthesised <code>with</code> statements and <code>match</code> could not be expressed at all. <b>PEP 617</b> replaced it with the PEG parser in <b>Python 3.9</b> (the old one was still available with <code>-X oldparser</code>), and the LL(1) parser was removed in <b>3.10</b>.</p><p>MAP's parser sits close to the old one: it is hand-written recursive descent that decides with one token, or two at <code>NAME '='</code> (LL(2)). That is why it never needs the PEG backtracking explained above.</p>"
+    },
+    {
+     "t": "anim",
+     "file": "ll1",
+     "caption": "LL(1) table-driven parsing of id + id"
+    },
+    {
+     "t": "html",
+     "html": "</aside><h3>What the interpreters actually do</h3><p>All six interpreters call their parser \"PEG-style\", but they <b>never need to rewind</b>. Each ordered choice is decided by <b>peeking</b> one or two tokens ahead. That works because MAP's alternatives start with different tokens (<code>def</code>, <code>if</code>, <code>for</code>), or can be told apart by the second token (<code>NAME '='</code>). The result is the same tree, built without backtracking or memoization.</p>"
+    },
+    {
+     "t": "code",
+     "id": "parser.stmt",
+     "title": "statements: ordered choice decided by lookahead"
+    },
+    {
+     "t": "html",
+     "html": "<p>Each grammar rule is one function that <b>returns an AST node</b>. Precedence comes from which rule calls which: <code>comparison</code> calls <code>sum</code>, so <code>+</code> binds tighter than <code>&lt;=</code>.</p>"
+    },
+    {
+     "t": "code",
+     "id": "parser.comparison",
+     "title": "comparison and sum build Compare / BinOp nodes"
+    },
+    {
+     "t": "code",
+     "id": "parser.error",
+     "title": "how a SyntaxError is raised"
+    },
+    {
+     "t": "html",
+     "html": "<h3>Invalid programs</h3><p>Each program below was run through the real lexer and parser. The message is exactly what <code>main.py</code> prints, and \"stops at\" is the token the parser was looking at when it gave up.</p>"
+    },
+    {
+     "t": "errgrid",
+     "items": [
+      {
+       "id": "err_parse_missing_colon",
+       "msg": "MAP: ParseError: SyntaxError: expected ':' after if-condition [line 2]",
+       "cpy": "CPython 3.14: SyntaxError: expected ':'",
+       "where": "line 2, column 14"
+      },
+      {
+       "id": "err_parse_unclosed_paren",
+       "msg": "MAP: ParseError: SyntaxError: expected ')' after arguments [line 2]",
+       "cpy": "CPython 3.14: SyntaxError: '(' was never closed",
+       "where": "line 2, column 1"
+      },
+      {
+       "id": "err_parse_def_no_paren",
+       "msg": "MAP: ParseError: SyntaxError: expected '(' after function name [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: expected '('",
+       "where": "line 1, column 13"
+      },
+      {
+       "id": "err_parse_double_equal",
+       "msg": "MAP: ParseError: SyntaxError: unexpected token '=' ('=') [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "line 1, column 5"
+      },
+      {
+       "id": "err_parse_missing_indent",
+       "msg": "MAP: ParseError: SyntaxError: expected indented block [line 2]",
+       "cpy": "CPython 3.14: IndentationError: expected an indented block after 'if' statement on line 1",
+       "where": "line 2, column 1"
+      },
+      {
+       "id": "err_parse_dangling_op",
+       "msg": "MAP: ParseError: SyntaxError: unexpected token 'NEWLINE' ('\\n') [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "line 1, column 8"
+      },
+      {
+       "id": "err_lex_bad_dedent",
+       "msg": "MAP: LexerError: IndentationError: unindent does not match any outer indentation level [line 4]",
+       "cpy": "CPython 3.14: IndentationError: unindent does not match any outer indentation level",
+       "where": "line 4"
+      },
+      {
+       "id": "err_lex_bad_char",
+       "msg": "MAP: LexerError: SyntaxError: unexpected character '$' [line 1]",
+       "cpy": "CPython 3.14: SyntaxError: invalid syntax",
+       "where": "line 1"
+      }
+     ]
+    }
+   ],
+   "videos": [
+    {
+     "file": "backtracking",
+     "caption": "Ordered choice and backtracking"
+    },
+    {
+     "file": "packrat",
+     "caption": "Packrat memoization"
+    },
+    {
+     "file": "recursive_descent",
+     "caption": "Recursive descent in main.py"
+    }
+   ],
+   "notes": {
+    "python": "One method per rule (<code>_stmt</code>, <code>_comparison</code>, <code>_sum</code> …), each returning a dataclass node.",
+    "rust": "Each rule returns <code>PResult&lt;Expr&gt;</code>; the <code>?</code> operator propagates SyntaxErrors.",
+    "c++": "Each rule builds a fat <code>ASTNode</code> and fills <code>a</code>/<code>b</code>/<code>strVal</code>.",
+    "java": "Each rule returns a record such as <code>Compare</code>; <code>expect</code> throws <code>ParseError</code>.",
+    "clojure": "Parser state is an atom <code>{:tokens :pos}</code>; each rule returns a record.",
+    "llvm": "The parser is the same as main.py: the compiler only starts after the AST is built."
+   },
+   "term": "Parser (syntax analysis, PEG)",
+   "meta": "~45 min · ★★★",
+   "checkpoint": {
+    "try": "add <code>!=</code> next to <code>==</code> in your <code>comparison</code> rule.",
+    "break": "delete the colon after an <code>if</code>. Does your message match the one above?",
+    "have": "Your interpreter knows when a sentence is grammatical. It doesn't know what it means yet."
+   }
+  },
+  {
+   "id": "ast",
+   "title": "The skeleton: your program as a tree",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Take a sentence and remove the punctuation. What is left is the skeleton: who does what to whom. The AST is the skeleton of your program.</p><p>The <b>Abstract Syntax Tree</b> keeps only what matters for running the program. There are no parentheses, colons or indentation; those exist only to shape the tree. Every node is a small class:</p>"
+    },
+    {
+     "t": "code",
+     "id": "ast.base",
+     "title": "base class and root"
+    },
+    {
+     "t": "code",
+     "id": "ast.expr",
+     "title": "expression nodes"
+    },
+    {
+     "t": "code",
+     "id": "ast.stmt",
+     "title": "statement nodes"
+    },
+    {
+     "t": "html",
+     "html": "<p><b>Composite pattern.</b> A node can contain other nodes (a <code>FuncDef</code> has a <code>body</code>, a <code>BinOp</code> has <code>left</code>/<code>right</code>), and code treats a single node and a whole subtree the same way. <code>Name</code> and the literals are the leaves.</p><details class='predict'><summary>Before you scroll: sketch the tree for <code>fib_rec(n - 1) + fib_rec(n - 2)</code>.</summary><p>A <code>BinOp '+'</code> with two children. Each child is a <code>Call</code> to <code>Name('fib_rec')</code> whose argument is a <code>BinOp '-'</code> of <code>Name('n')</code> and an <code>IntLiteral</code>. Find it in the tree for A below.</p></details><h3>The trees for A and B</h3><p>This is what <code>python3 main.py --ast</code> prints:</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "ast_a",
+       "title": "Program A"
+      },
+      {
+       "t": "shared",
+       "id": "ast_b",
+       "title": "Program B"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<h3>Walking the tree: Visitor</h3><p>To do something with every node (print it, check it, run it) you need code per node type. The <b>Visitor pattern</b> keeps that code out of the node classes: a visitor has one function per node type, and a dispatcher picks the right one:</p>"
+    },
+    {
+     "t": "code",
+     "id": "eval.dispatch",
+     "title": "the dispatcher: pick the handler for the node's type"
+    },
+    {
+     "t": "html",
+     "html": "<p>A node's handler visits its children by calling the dispatcher again, which gives a depth-first walk. The evaluator itself is the <b>Interpreter pattern</b>: each grammar construct has a class, and evaluating the tree means asking each node to evaluate itself.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "tree_a",
+     "caption": "Program A: tree construction"
+    },
+    {
+     "file": "walk_a",
+     "caption": "Program A: depth-first walk"
+    }
+   ],
+   "notes": {
+    "python": "<code>@dataclass</code> subclasses of <code>ASTNode</code>; dispatch with <code>getattr(self, \"_exec_\" + ClassName)</code>.",
+    "rust": "A tree of enums; children are <code>Box&lt;Expr&gt;</code> and <code>Vec&lt;Stmt&gt;</code>; visiting is a <code>match</code>.",
+    "c++": "One fat <code>ASTNode</code> struct with a <code>NodeType</code> tag, held by <code>shared_ptr</code>; visiting is a <code>switch</code>. There are no separate expression and statement classes.",
+    "java": "<code>sealed interface Node</code> + records; a pattern-matching <code>switch</code> must handle every case.",
+    "clojure": "<code>defrecord</code> per node; visiting is <code>defmulti exec-node</code> dispatching on <code>type</code>.",
+    "llvm": "The same dataclasses; the visitor is <code>CodeGen</code>, whose <code>st_*</code>/<code>ex_*</code> methods emit IR instead of running the node."
+   },
+   "term": "AST and tree walk",
+   "meta": "~20 min · ★★☆",
+   "checkpoint": {
+    "try": "print your tree for Program B and compare it with the one above.",
+    "break": "remove the handler for one node type. What does your dispatcher do when it meets that node?",
+    "have": "Your program is a tree you can walk. Nothing runs yet."
+   }
+  },
+  {
+   "id": "semantic",
+   "title": "Meaning: what does each name refer to?",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<details class='predict'><summary>What does this print?<pre>x = 1\ndef f():\n    print(x)\n    x = 2\n\nf()</pre></summary><p>Most people guess <b>1</b>. CPython raises <code>UnboundLocalError</code>, and MAP prints 1. This chapter explains why.</p></details><p>Think of an environment as a sticky note. It lists some names and their values, and points to the note behind it. To find a name, you read your note first, then the one behind, and so on.</p><p>A program can be grammatically correct and still be wrong. <b>Semantic analysis</b> is a pass over the AST, after parsing and before running, that works out what names mean and rejects what can be rejected early.</p><h3>Scope resolution: local or global?</h3><p>Python's rule: <b>a name that is assigned anywhere in a function body is local to the whole function.</b> Parameters are local too. Any other name is looked up in the global scope, then in the builtins. For Program B:</p><div class='tablewrap'><table><tr><th>scope</th><th>name</th><th>kind</th></tr><tr><td><code>global</code></td><td><code>print</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>range</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>fib_iter</code></td><td>global (function)</td></tr><tr><td><code>fib_iter</code></td><td><code>n</code></td><td>local (parameter)</td></tr><tr><td><code>fib_iter</code></td><td><code>a</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>b</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>i</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>temp</code></td><td>local</td></tr></table></div><p>In Program A, <code>fib_rec</code> is used inside its own body but never assigned there, so it is <b>global</b>. That is how recursion finds the function. The table above is computed from the real AST by <code>capture.scope_table</code>; MAP itself has no semantic pass.</p><h3>Errors found before running vs at runtime</h3><div class='tablewrap'><table><tr><th>program</th><th>CPython 3.14</th><th>MAP</th></tr><tr><td><pre>return 5</pre></td><td>SyntaxError: 'return' outside function</td><td>InternalError: 5</td></tr><tr><td><pre>def f(n, n):\n    return n\n\nprint(f(1, 2))</pre></td><td>SyntaxError: duplicate argument 'n' in function definition</td><td>2</td></tr><tr><td><pre>x = 1\ndef f():\n    print(x)\n    x = 2\n\nf()</pre></td><td>UnboundLocalError: cannot access local variable 'x' where it is not associated with a value</td><td>1</td></tr><tr><td><pre>def f():\n    return g()\n\ndef g():\n    return 1\n\nprint(f())</pre></td><td>1</td><td>1</td></tr></table></div><ul><li><code>'return' outside function</code> and <code>duplicate argument</code> are caught by CPython's compiler <b>before any code runs</b>. None of the six interpreters has a full semantic pass. MAP runs the first program anyway: the return signal escapes to the top and is reported as an InternalError. It silently accepts the duplicate parameter.</li><li><code>UnboundLocalError</code>: CPython decided at compile time that <code>x</code> is local in <code>f</code> (it is assigned on line 4), so reading it on line 3 fails. MAP has no such pass. Its environment lookup walks up to the global <code>x</code> and prints 1, which is a known difference.</li><li><b>NameError cannot be detected early.</b> In the last program, <code>f</code> mentions <code>g</code> before <code>g</code> exists. By the time <code>f()</code> runs, <code>g</code> has been defined. Whether a global name exists depends on what has executed so far (definitions can be conditional), so the check must happen during the lookup itself.</li></ul>"
+    },
+    {
+     "t": "code",
+     "id": "env.get",
+     "title": "Environment: where NameError is raised (at runtime)"
+    }
+   ],
+   "videos": [
+    {
+     "file": "scope",
+     "caption": "Scope resolution"
+    }
+   ],
+   "notes": {
+    "python": "No semantic pass; <code>Environment.get</code> walks the parent chain and raises NameError when it runs out of parents.",
+    "rust": "No semantic pass; <code>Env::get</code> walks the parent chain like main.py.",
+    "c++": "No semantic pass; <code>Environment::get</code> walks the parent chain and throws a runtime error.",
+    "java": "No semantic pass; a top-level <code>return</code> is turned into a SyntaxError at runtime by <code>Interpreter.run</code>. Java's twist: <code>None</code> is <code>null</code>, so lookup needs <code>containsKey</code> instead of <code>get</code>.",
+    "clojure": "No semantic pass; a top-level <code>return</code> surfaces as an InternalError.",
+    "llvm": "The only port with a pre-pass: <code>_scan</code> collects assigned names to decide locals (allocas) vs global slots, and a global slot that is still undefined raises NameError when loaded."
+   },
+   "term": "Semantic analysis",
+   "meta": "~15 min · ★★☆",
+   "checkpoint": {
+    "try": "write a function that lists the local names of a function: its parameters plus every name assigned in its body.",
+    "break": "run the <code>x = 1</code> program from the top of this chapter. Does your interpreter print 1 like MAP, or fail like CPython?",
+    "have": "You know where every name lives. Next, we give them values."
+   }
+  },
+  {
+   "id": "memory",
+   "title": "Bringing it to life: frames, calls, return",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Two images help here. The call stack is a stack of plates: each call puts a plate on top, and each return takes it off. A <code>return</code> is an emergency exit: it skips every room between you and the door.</p><p>The evaluator walks the AST and does what each node says. While it runs, memory has two parts, the same ones Python Tutor draws:</p><ul><li><b>Frames</b> (left in the videos): one <code>Environment</code> per active call, mapping names to values. The global frame is created first.</li><li><b>Objects</b> (right): values that variables refer to, such as function objects. Small ints are shown inline.</li></ul><h3>Calling a function</h3><ol><li>Evaluate the callee and the arguments.</li><li>Create a <b>new Environment whose parent is the function's closure</b> (the global frame for MAP's top-level functions).</li><li>Bind each parameter to its argument.</li><li>Execute the body. <code>return</code> sends a return signal with the value, which unwinds out of nested <code>if</code>/<code>for</code> blocks to the call.</li><li>Catch it, discard the frame, and hand the value back.</li></ol>"
+    },
+    {
+     "t": "code",
+     "id": "eval.call",
+     "title": "evaluating a Call"
+    },
+    {
+     "t": "code",
+     "id": "eval.return_signal",
+     "title": "the return signal"
+    },
+    {
+     "t": "code",
+     "id": "eval.control",
+     "title": "return, if and for"
+    },
+    {
+     "t": "html",
+     "html": "<details class='predict'><summary>Guess first: how deep will the stack get for <code>fib_rec(4)</code>? Then watch the videos below.</summary><p>The <b>call stack</b> is the chain of active frames. In MAP it is not a separate data structure: every call is a call in the host language, so the host's own stack holds it. Program A reaches a depth of 4 frames (<code>fib_rec(4)</code> down to <code>fib_rec(1)</code>, plus global).</p></details><p>The videos show one step per executed line, recorded by an <code>Interpreter</code> subclass in <code>capture.py</code> that only watches; the evaluation is main.py's own. Program A takes 39 steps and Program B takes 25. Just before <code>fib_iter(6)</code> returns, its frame is <code>{\"n\": \"6\", \"a\": \"5\", \"b\": \"8\", \"i\": \"6\", \"temp\": \"8\"}</code> and the return value is <b>8</b>.</p><p>In the videos, watch the stack grow, then collapse back to 3.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "environments",
+     "caption": "Environments and calls"
+    },
+    {
+     "file": "memory_a",
+     "caption": "Program A step by step (memory view)"
+    },
+    {
+     "file": "memory_b",
+     "caption": "Program B step by step (memory view)"
+    }
+   ],
+   "notes": {
+    "python": "<code>return</code> raises <code>ReturnSignal</code>, and <code>_eval_Call</code> catches it.",
+    "rust": "<code>Rc&lt;Env&gt;</code> frames; <code>return</code> is <code>Err(Flow::Return(v))</code> and propagates with <code>?</code>.",
+    "c++": "<code>make_shared&lt;Environment&gt;(closure)</code>; <code>throw ReturnException</code>.",
+    "java": "<code>ReturnSignal</code> is a RuntimeException without a stack trace, so it is cheap.",
+    "clojure": "<code>ex-info</code> with <code>:return-signal</code> data, caught and unwrapped.",
+    "llvm": "Each MAP function becomes a native LLVM function: <code>return</code> is a real <code>ret</code> instruction, locals are <code>alloca</code> slots, and the native stack holds the frames."
+   },
+   "term": "Evaluation and memory",
+   "meta": "~30 min · ★★★",
+   "checkpoint": {
+    "try": "run Programs A and B. They must print 3 and 8.",
+    "break": "forget to catch the return signal in your Call handler. What happens to the first <code>return</code>?",
+    "have": "Your interpreter runs real programs. Program A prints 3."
+   }
+  },
+  {
+   "id": "errors",
+   "title": "The error museum",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Welcome to the error museum. Every exhibit here is a program that went wrong, and every stage has its own way of saying no.</p><p>Every stage can reject a program, and each one raises its own error class. All of them derive from one base class carrying a message and a line:</p>"
+    },
+    {
+     "t": "code",
+     "id": "errors.classes",
+     "title": "the error classes"
+    },
+    {
+     "t": "html",
+     "html": "<div class='tablewrap'><table><tr><th>stage</th><th>error</th><th>raised in main.py</th><th>real message</th></tr><tr><td>lexer</td><td><code>IndentationError</code></td><td><code>Lexer._handle_indentation</code></td><td><code>LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</code></td></tr><tr><td>lexer</td><td><code>SyntaxError</code></td><td><code>Lexer._read_operator</code></td><td><code>LexerError: SyntaxError: unexpected character '$' [line 1]</code></td></tr><tr><td>parser</td><td><code>SyntaxError</code></td><td><code>Parser._expect / Parser._err</code></td><td><code>ParseError: SyntaxError: expected ':' after if-condition [line 2]</code></td></tr><tr><td>semantic</td><td><code>'return' outside function</code></td><td><code>(no pass) → InternalError</code></td><td><code>InternalError: 5</code></td></tr><tr><td>runtime</td><td><code>NameError</code></td><td><code>Environment.get</code></td><td><code>PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (operands)</code></td><td><code>Interpreter._apply_binop</code></td><td><code>PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (arity)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]</code></td></tr><tr><td>runtime</td><td><code>TypeError (not callable)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: 'int' object is not callable [line 2]</code></td></tr><tr><td>runtime</td><td><code>RecursionError</code></td><td><code>host Python stack → main()'s except Exception</code></td><td><code>InternalError: maximum recursion depth exceeded</code></td></tr><tr><td>runtime</td><td><code>ZeroDivisionError</code></td><td><code>Interpreter._apply_binop</code></td><td>cannot happen in MAP: there is no <code>/</code>, <code>//</code> or <code>%</code></td></tr></table></div><p><b>How an error is reported.</b> A runtime error raised deep inside a recursion passes through every call (none of them catches it) until <code>main()</code> catches it and prints <code>Kind: message [line N]</code>:</p>"
+    },
+    {
+     "t": "code",
+     "id": "errors.main",
+     "title": "main(): the single place that reports errors"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "err_rt_name_error_deep",
+       "title": "examples/errors/rt_name_error_deep.py"
+      },
+      {
+       "t": "shared",
+       "id": "rt_name_error_deep_out",
+       "title": "MAP output"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<p><b>Line and column.</b> Every token stores <code>line</code> and <code>col</code>, but the error reports only the line, and the column is lost. Reporting columns means passing the token's column into the error and printing the source line with a <code>^</code> under it, as CPython does:</p>"
+    },
+    {
+     "t": "shared",
+     "id": "cpython_traceback",
+     "title": "CPython 3.14, last line of the traceback"
+    },
+    {
+     "t": "html",
+     "html": "<p><b>RecursionError.</b> MAP does not count calls. A runaway recursion exhausts the <i>host</i> Python's stack, and <code>main()</code> reports that as <code>InternalError</code>. Java catches <code>StackOverflowError</code>, the llvm port counts calls up to <code>MAX_DEPTH = 4000</code>, and Rust, C++ and Clojure simply crash. A faithful version keeps a depth counter in the call and raises at 1000, as CPython does.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "error_stack",
+     "caption": "An error travels up the call stack"
+    }
+   ],
+   "notes": {
+    "python": "<code>PyError(Exception)</code> with <code>LexerError</code>, <code>ParseError</code> and <code>PyRuntimeError</code> subclasses.",
+    "rust": "Errors are values: <code>enum PyError</code> returned through <code>Result</code>, not thrown. Why does Rust crash on deep recursion while Java raises RecursionError? A stack overflow in Rust aborts the process: there is nothing to catch.",
+    "c++": "A class hierarchy under <code>EduPyError : std::exception</code>.",
+    "java": "<code>PyError extends RuntimeException</code> plus subclasses. Why does Java raise RecursionError while Rust crashes? The JVM throws <code>StackOverflowError</code>, and the interpreter catches it.",
+    "clojure": "<code>ex-info</code> maps with <code>:error-type</code> and <code>:line</code>.",
+    "llvm": "The same <code>PyError</code> classes; native code sets an error flag through the runtime, and every fallible call checks it and unwinds."
+   },
+   "term": "Errors",
+   "meta": "~20 min · ★★☆",
+   "checkpoint": {
+    "try": "call a function with the wrong number of arguments and check that the line number is right.",
+    "break": "remove the base case from <code>fib_rec</code>. Who stops it: your interpreter or the host?",
+    "have": "Your interpreter fails politely, with a kind and a line."
+   }
+  },
+  {
+   "id": "builtins",
+   "title": "Crossing the border: print and range",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Think of power outlets. Your MAP program plugs into them, and the electricity comes from the host language.</p><p>A builtin is a function written in the <b>host language</b> rather than in MAP. MAP needs two of them, <code>print</code> and <code>range</code>. Each interpreter defines 14 and registers all of them the same way: as ordinary values in the global Environment.</p>"
+    },
+    {
+     "t": "code",
+     "id": "builtins.print",
+     "title": "print"
+    },
+    {
+     "t": "code",
+     "id": "builtins.range",
+     "title": "range — returns an eager list"
+    },
+    {
+     "t": "code",
+     "id": "builtins.registry",
+     "title": "the registry"
+    },
+    {
+     "t": "code",
+     "id": "builtins.seed",
+     "title": "seeded into the global scope when the interpreter starts"
+    },
+    {
+     "t": "html",
+     "html": "<p>When a <code>Call</code> node runs, the callee is looked up like any variable. If the value is a host callable rather than a MAP function, it is called directly with the list of evaluated arguments. That is the point where MAP code crosses into native code. Python Tutor hides builtins in its frames, and so do the videos.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "native",
+     "caption": "Crossing into native code"
+    }
+   ],
+   "notes": {
+    "python": "Plain Python functions in the <code>BUILTINS</code> dict, recognised with <code>callable()</code>.",
+    "rust": "Builtins are stored by name (<code>Value::Builtin(String)</code>) and dispatched with a string <code>match</code>.",
+    "c++": "A vector of name / function-pointer pairs, registered when the Interpreter is constructed.",
+    "java": "<code>reg(name, lambda)</code> into a <code>LinkedHashMap</code>; this range checks for step 0.",
+    "clojure": "Plain Clojure functions in a map, recognised with <code>fn?</code>.",
+    "llvm": "Builtins stay in Python: compiled code calls back into the runtime through <code>rt_call_builtin</code>."
+   },
+   "term": "Builtins",
+   "meta": "~15 min · ★☆☆",
+   "checkpoint": {
+    "try": "add a third builtin, like <code>abs</code> or <code>max</code>.",
+    "break": "write <code>print = 1</code>, then call <code>print(2)</code>. Which error do you get?",
+    "have": "That's the whole pipeline. You have written a Python."
+   }
+  },
+  {
+   "id": "bytecode",
+   "title": "Bonus: real CPython bytecode",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>CPython does not walk the tree. It compiles each function into <b>bytecode</b>, a flat list of instructions for a stack machine, and control flow becomes <b>jumps</b>. Below is <code>dis.dis</code> for both functions, run with <b>Python 3.14</b>. Bytecode is an implementation detail: it differs between Python versions, so on 3.12 or 3.13 you will see other instruction names.</p>"
+    },
+    {
+     "t": "cols",
+     "blocks": [
+      {
+       "t": "shared",
+       "id": "dis_fib_rec",
+       "title": "fib_rec — python3.14 -m dis"
+      },
+      {
+       "t": "shared",
+       "id": "dis_fib_iter",
+       "title": "fib_iter — python3.14 -m dis"
+      }
+     ]
+    },
+    {
+     "t": "html",
+     "html": "<ul><li><code>if n &lt;= 1:</code> becomes <code>COMPARE_OP</code> followed by <code>POP_JUMP_IF_FALSE … (to L1)</code>, which skips the <code>return n</code> when the test is false.</li><li><code>for</code> becomes <code>GET_ITER</code>, then <code>FOR_ITER (to L3)</code> at the top of the loop (it leaves when the iterator is exhausted) and <code>JUMP_BACKWARD (to L2)</code> at the bottom.</li></ul><h3>Tree-walkers use no jumps</h3><p>A tree-walker never needs jumps: an <code>If</code> node is executed by a host <code>if</code>, and a <code>For</code> node by a host <code>for</code>. The structure of the tree <i>is</i> the control flow. Only a compiler needs jumps — like CPython, and like the LLVM port.</p><p>You already saw <code>if</code> and <code>for</code> in the selected interpreter in <a href='#memory'>chapter 6</a>.</p>"
+    }
+   ],
+   "videos": [
+    {
+     "file": "bytecode_b",
+     "caption": "CPython bytecode for Program B"
+    }
+   ],
+   "notes": {
+    "python": "A tree-walker: <code>if</code> and <code>for</code> are host <code>if</code> and <code>for</code>.",
+    "rust": "A tree-walker: <code>if</code> and <code>for</code> are a Rust <code>if</code> and <code>for</code> inside the <code>match</code>.",
+    "c++": "A tree-walker: <code>if</code> and <code>for</code> are a C++ <code>if</code> and range-<code>for</code> inside the <code>switch</code>.",
+    "java": "A tree-walker: <code>if</code> and <code>for</code> are Java statements inside the pattern <code>switch</code>.",
+    "clojure": "A tree-walker: <code>if</code> and <code>doseq</code> inside each <code>defmethod</code>.",
+    "llvm": "The LLVM port compiles too, so like CPython it emits basic blocks and branches (jumps): <code>cbranch</code> for <code>if</code>, and a loop header plus a back edge for <code>for … in range</code>."
+   },
+   "meta": "~15 min · ★★☆"
+  },
+  {
+   "id": "out_of_scope",
+   "title": "Expansion packs",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>Think of what follows as expansion packs, ready for you to build.</p><p>This tutorial covers the language core only. MAP has <b>no</b> standard library, no <code>import</code> or modules, no classes or objects, and no operating-system APIs (files, sockets, processes, environment). It also leaves out <code>while</code>, <code>try/except</code>, strings, lists, floats and <code>/ // %</code>. Most of these exist in the six full ports and are left out of MAP on purpose. Each one is a new token, a new grammar rule, a new node, and a new evaluation function, built with exactly the same steps as above.</p>"
+    }
+   ],
+   "videos": [],
+   "notes": {},
+   "term": "Out of scope"
+  },
+  {
+   "id": "your_turn",
+   "title": "Your turn: build your own Python",
+   "blocks": [
+    {
+     "t": "html",
+     "html": "<p>You have seen every piece. Now build it yourself. Pick a host language: one of the six, or one that is not here yet (Go, C#, Haskell, JavaScript, Zig …). Then go through the tutorial in order, one stage at a time:</p><ol class='checklist'><li><a href='#tokenizer'>Tokenizer</a>: a scanner loop and an indent stack that emits INDENT and DEDENT.</li><li><a href='#parser'>Parser</a>: one recursive-descent function per grammar rule, deciding with one or two tokens of lookahead.</li><li><a href='#ast'>AST</a>: one node type per construct, and a dispatcher that picks the handler for each node.</li><li><a href='#semantic'>Environments</a>: <code>{vars, parent}</code>, with lookup walking up the parent chain.</li><li><a href='#memory'>Calls and return</a>: a new environment per call, and a return signal that unwinds to the call.</li><li><a href='#errors'>Errors</a>: one class per stage, each carrying a line number, reported in one place.</li><li><a href='#builtins'>Builtins</a>: <code>print</code> and <code>range</code> as host functions stored in the global environment.</li></ol><h3>Final check</h3><ul><li>Program A prints <b>3</b> and Program B prints <b>8</b>.</li><li>The programs in <code>tutorial/examples/errors/</code> fail with the messages from chapters 3 and 7.</li></ul><p>Stuck? Switch the <b>Programming language</b> selector at the top: every stage is shown in six real interpreters, so you can compare your code with a working one. When MAP runs, keep going with the features from chapter 10: <code>while</code>, strings, lists, floats. Each one is a new token, a grammar rule, a node and an evaluation function — exactly the steps you already know.</p><p><b>Happy hacking, and welcome to the club of people who have written their own Python.</b></p>"
+    }
+   ],
+   "videos": [],
+   "notes": {}
   }
+ ]
 }

@@ -12,7 +12,7 @@ Present:
     manim-slides present InterpreterTutorial
 
 One slide = one video file in slides/files/InterpreterTutorial/.
-Each slide carries notes "chNN|title"; build_html.py uses them to put
+Each slide carries notes "<chapter>|title"; build_html.py uses them to put
 each video in the right chapter of index.html.
 """
 
@@ -367,10 +367,10 @@ def tutor_frames(step, x_frames=0.15, x_objs=3.95, top=2.6, fs=17):
 class InterpreterTutorial(Slide):
     def construct(self):
         chapters = [
-            self.ch01_overview, self.ch02_tokenizer, self.ch03_parser,
-            self.ch04_ast, self.ch05_semantic, self.ch06_memory,
-            self.ch07_errors, self.ch08_builtins, self.ch09_bytecode,
-            self.ch10_out_of_scope,
+            self.overview, self.tokenizer, self.parser,
+            self.ast, self.semantic, self.memory,
+            self.errors, self.builtins, self.bytecode,
+            self.out_of_scope,
         ]
         only = os.environ.get("MAP_CHAPTERS")  # e.g. MAP_CHAPTERS=2,3 for a test render
         for i, ch in enumerate(chapters, start=1):
@@ -406,8 +406,8 @@ class InterpreterTutorial(Slide):
         return new
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 1
-    def ch01_overview(self):
-        self.slide("ch01", "MAP: Make A Python")
+    def overview(self):
+        self.slide("overview", "MAP: Make A Python")
         t = Text("MAP — Make A Python", font_size=54, weight=BOLD)
         t.set_color_by_gradient(NAME, ACCENT, NUMBER)
         sub = Text("Build a Python interpreter, one stage at a time", font_size=26, color=MUTED)
@@ -425,7 +425,7 @@ class InterpreterTutorial(Slide):
         self.wait(0.5)
 
         # ── pipeline
-        self.slide("ch01", "The pipeline")
+        self.slide("overview", "The pipeline")
         self.clear()
         head = self.title("1 · The pipeline")
         stages = [
@@ -465,7 +465,7 @@ class InterpreterTutorial(Slide):
         out = mono("3", fs=30, color=OK).next_to(boxes[-1], UP, buff=0.2)
         self.play(FadeOut(dot), FadeIn(out, shift=UP * 0.2))
 
-        self.next_slide(notes="ch01|CPython takes another road")
+        self.next_slide(notes="overview|CPython takes another road")
         # CPython branch from AST
         cp = VGroup()
         cp_stages = [("compile", "ast → code object"), ("Bytecode", "dis.dis(...)"), ("PVM", "ceval.c loop")]
@@ -491,7 +491,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(note))
 
         # ── six languages
-        self.slide("ch01", "Same pipeline in six languages")
+        self.slide("overview", "Same pipeline in six languages")
         self.clear()
         self.title("Same pipeline, six interpreters")
         rows = [
@@ -526,8 +526,8 @@ class InterpreterTutorial(Slide):
         self.wait(0.5)
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 2
-    def ch02_tokenizer(self):
-        self.slide("ch02", "The scanner loop")
+    def tokenizer(self):
+        self.slide("tokenizer", "The scanner loop")
         self.clear()
         self.title("2 · Tokenizer — Lexer.tokenize()")
         loop = code_card(
@@ -560,7 +560,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(tok, shift=UP * 0.2))
 
         # ── Program A token by token
-        self.slide("ch02", "Program A token by token")
+        self.slide("tokenizer", "Program A token by token")
         self.clear()
         self.title("Scanning Program A")
         lst = Listing(C.PROGRAM_A, fs=20, numbers=True).to_corner(UL, buff=0.5).shift(DOWN * 0.75 + RIGHT * 0.4)
@@ -619,7 +619,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
         # ── Program B: indentation focus
-        self.slide("ch02", "INDENT and DEDENT in Program B")
+        self.slide("tokenizer", "INDENT and DEDENT in Program B")
         self.clear()
         self.title("Leading whitespace → INDENT / DEDENT")
         lst = Listing(C.PROGRAM_B, fs=19, numbers=True).to_corner(UL, buff=0.5).shift(DOWN * 0.7 + RIGHT * 0.4)
@@ -694,8 +694,8 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 3
-    def ch03_parser(self):
-        self.slide("ch03", "MAP grammar")
+    def parser(self):
+        self.slide("parser", "MAP grammar")
         self.clear()
         self.title("3 · Parser — a PEG for MAP")
         grammar = [
@@ -737,7 +737,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
         # ── ordered choice + backtracking
-        self.slide("ch03", "Ordered choice and backtracking")
+        self.slide("parser", "Ordered choice and backtracking")
         self.clear()
         self.title("Ordered choice + backtracking")
         rule = VGroup(mono("simple_stmt <- assign / expr_stmt", fs=22, color=TEXT),
@@ -774,7 +774,7 @@ class InterpreterTutorial(Slide):
         cap = self.set_cap(cap, "main.py chooses without rewinding: _check(NAME) and _peek(1).type == EQUAL (main.py:770)")
 
         # ── packrat
-        self.slide("ch03", "Packrat memoization")
+        self.slide("parser", "Packrat memoization")
         self.clear()
         self.title("Packrat: remember (rule, pos) → result")
         rule = mono("comparison <- sum '<=' sum / sum", fs=22).to_corner(UL, buff=0.5).shift(DOWN * 0.8)
@@ -806,7 +806,7 @@ class InterpreterTutorial(Slide):
         cap = self.set_cap(cap, "every (rule, pos) is parsed at most once → linear time.  main.py's _comparison parses _sum once, then peeks for '<='.")
 
         # ── real recursive descent
-        self.slide("ch03", "Recursive descent in main.py")
+        self.slide("parser", "Recursive descent in main.py")
         self.clear()
         self.title("main.py's recursive descent on:  n <= 1")
         events, ttoks = C.parse_calls("n <= 1\n")
@@ -857,7 +857,7 @@ class InterpreterTutorial(Slide):
             ("lex_bad_dedent.py", "lexer"), ("lex_bad_char.py", "lexer"),
         ]
         for part in range(2):
-            self.slide("ch03", f"Invalid programs ({part + 1}/2)")
+            self.slide("parser", f"Invalid programs ({part + 1}/2)")
             self.clear()
             self.title(f"Invalid programs and the SyntaxError each one raises ({part + 1}/2)")
             panels = VGroup()
@@ -901,8 +901,8 @@ class InterpreterTutorial(Slide):
             self.play(FadeIn(cap))
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 4
-    def ch04_ast(self):
-        self.slide("ch04", "Node classes: Composite")
+    def ast(self):
+        self.slide("ast", "Node classes: Composite")
         self.clear()
         self.title("4 · AST — node classes (Composite pattern)")
         root = card("ASTNode(line)", color=ACCENT, w=3.2, h=0.55, fs=20).move_to(UP * 2.1)
@@ -927,7 +927,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(disp, shift=UP * 0.2))
 
         for name, src in (("A", C.PROGRAM_A), ("B", C.PROGRAM_B)):
-            self.slide("ch04", f"Program {name}: tree construction")
+            self.slide("ast", f"Program {name}: tree construction")
             self.clear()
             self.title(f"Program {name} — the AST built by Parser.parse()")
             tree, order = build_tree(C.ast_tree(src), fs=17 if name == "A" else 16, vgap=0.85 if name == "A" else 1.35)
@@ -941,7 +941,7 @@ class InterpreterTutorial(Slide):
             cap = caption("Statements = purple, expressions = yellow, names = blue, literals = green")
             self.play(FadeIn(cap))
 
-            self.slide("ch04", f"Program {name}: depth-first walk")
+            self.slide("ast", f"Program {name}: depth-first walk")
             ring = SurroundingRectangle(order[0]["mob"], color=HILITE, buff=0.04)
             cap = self.set_cap(cap, "_print_ast / a Visitor: visit node, then each child left → right (depth-first)")
             self.play(Create(ring), run_time=0.3)
@@ -953,8 +953,8 @@ class InterpreterTutorial(Slide):
             self.wait(0.3)
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 5
-    def ch05_semantic(self):
-        self.slide("ch05", "Scope resolution")
+    def semantic(self):
+        self.slide("semantic", "Scope resolution")
         self.clear()
         self.title("5 · Semantic analysis — which names are local?")
         lst = Listing(C.PROGRAM_B, fs=18, numbers=True).to_corner(UL, buff=0.5).shift(DOWN * 0.8 + RIGHT * 0.4)
@@ -1001,7 +1001,7 @@ class InterpreterTutorial(Slide):
         cap = caption("MAP has no separate semantic pass — this table is computed from the real AST to show the idea.")
         self.play(FadeIn(cap))
 
-        self.slide("ch05", "Errors before running vs at runtime")
+        self.slide("semantic", "Errors before running vs at runtime")
         self.clear()
         self.title("Compile-time errors vs runtime errors")
         cases = [
@@ -1032,7 +1032,7 @@ class InterpreterTutorial(Slide):
         cap = caption("A semantic pass would catch the first two before running. MAP does not have one, so it runs them anyway.")
         self.play(FadeIn(cap))
 
-        self.slide("ch05", "Why NameError must wait for runtime")
+        self.slide("semantic", "Why NameError must wait for runtime")
         self.clear()
         self.title("Why NameError can only be detected at runtime")
         src = C.example("errors/sem_late_binding.py")
@@ -1058,8 +1058,8 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 6
-    def ch06_memory(self):
-        self.slide("ch06", "Environments and calls")
+    def memory(self):
+        self.slide("memory", "Environments and calls")
         self.clear()
         self.title("6 · Evaluation — Environment frames and calls")
         g = card("Global Environment", color=NAME, w=4.2, h=0.55, fs=18).move_to(LEFT * 3.5 + UP * 1.6)
@@ -1094,7 +1094,7 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(get))
 
         for name, src in (("A", C.PROGRAM_A), ("B", C.PROGRAM_B)):
-            self.slide("ch06", f"Program {name} step by step (memory view)")
+            self.slide("memory", f"Program {name} step by step (memory view)")
             self.clear()
             self.title(f"Program {name} — memory, one step per executed line")
             self.tutor(src, fast=(name == "A"))
@@ -1134,8 +1134,8 @@ class InterpreterTutorial(Slide):
         return lst, mem
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 7
-    def ch07_errors(self):
-        self.slide("ch07", "Every error and where it is raised")
+    def errors(self):
+        self.slide("errors", "Every error and where it is raised")
         self.clear()
         self.title("7 · Errors — what, where, and the real message")
         rows = [
@@ -1166,7 +1166,7 @@ class InterpreterTutorial(Slide):
         cap = caption("PyError.plain() → 'Kind: message [line N]'. Tokens carry a column, but the error reports only the line.")
         self.play(FadeIn(cap))
 
-        self.slide("ch07", "An error travels up the call stack")
+        self.slide("errors", "An error travels up the call stack")
         self.clear()
         self.title("NameError raised 4 frames deep, caught in main()")
         src = C.example("errors/rt_name_error_deep.py")
@@ -1206,8 +1206,8 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 8
-    def ch08_builtins(self):
-        self.slide("ch08", "BUILTINS seeded into globals")
+    def builtins(self):
+        self.slide("builtins", "BUILTINS seeded into globals")
         self.clear()
         self.title("8 · Builtins — native functions in the global scope")
         names = list(C.M.BUILTINS)
@@ -1231,7 +1231,7 @@ class InterpreterTutorial(Slide):
         cap = caption("All 14 get registered; MAP programs use only print and range (green).")
         self.play(FadeIn(cap))
 
-        self.slide("ch08", "Crossing into native code")
+        self.slide("builtins", "Crossing into native code")
         self.clear()
         self.title("print(...) and range(...) cross into host Python")
         border = DashedLine(UP * 2.6, DOWN * 3.0, color=MUTED).move_to(RIGHT * 1.6 + DOWN * 0.2)
@@ -1262,9 +1262,9 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
     # ═════════════════════════════════════════════════════════════ CHAPTER 9
-    def ch09_bytecode(self):
+    def bytecode(self):
         for name, src, func in (("A", C.PROGRAM_A, "fib_rec"), ("B", C.PROGRAM_B, "fib_iter")):
-            self.slide("ch09", f"CPython bytecode for Program {name}")
+            self.slide("bytecode", f"CPython bytecode for Program {name}")
             self.clear()
             self.title(f"9 · Bonus — CPython 3.14 bytecode for {func}")
             instrs = parse_dis(C.dis_text(src, func))
@@ -1320,7 +1320,7 @@ class InterpreterTutorial(Slide):
             cap = caption("Bytecode differs between Python versions (this is 3.14). Orange = jumps: that is how CPython does if/for.")
             self.play(FadeIn(cap))
 
-        self.slide("ch09", "MAP uses no jumps")
+        self.slide("bytecode", "MAP uses no jumps")
         self.clear()
         self.title("MAP is a tree-walker: no jumps anywhere")
         a = code_card("def _exec_If(self, node, env):\n    if _ep_bool(self._eval(node.test, env)):\n        self._exec_stmts(node.body, env)\n    elif node.orelse:\n        self._exec_stmts(node.orelse, env)",
@@ -1339,8 +1339,8 @@ class InterpreterTutorial(Slide):
         self.play(FadeIn(cap))
 
     # ════════════════════════════════════════════════════════════ CHAPTER 10
-    def ch10_out_of_scope(self):
-        self.slide("ch10", "Out of scope")
+    def out_of_scope(self):
+        self.slide("out_of_scope", "Out of scope")
         self.clear()
         self.title("10 · Not in MAP")
         items = ["standard library (math, os, sys, ...)", "import / modules", "classes and objects",

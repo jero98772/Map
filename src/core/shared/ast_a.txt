@@ -1,0 +1,28 @@
+Program [line 1]
+  FuncDef name='fib_rec' params=['n']
+    If
+      test:
+        Compare op='<='
+          Name('n')
+          IntLiteral(1)
+      body:
+        Return
+          Name('n')
+    Return
+      BinOp op='+'
+        Call
+          Name('fib_rec')
+          BinOp op='-'
+            Name('n')
+            IntLiteral(1)
+        Call
+          Name('fib_rec')
+          BinOp op='-'
+            Name('n')
+            IntLiteral(2)
+  ExprStmt
+    Call
+      Name('print')
+      Call
+        Name('fib_rec')
+        IntLiteral(4)

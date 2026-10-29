@@ -1,0 +1,32 @@
+[
+ {
+  "name": "name_error",
+  "source": "print(fib_rec(4))\n",
+  "expected": "PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]\n"
+ },
+ {
+  "name": "name_error_deep",
+  "source": "def fib_rec(n):\n    if n <= 1:\n        return m\n    return fib_rec(n - 1) + fib_rec(n - 2)\n\nprint(fib_rec(4))\n",
+  "expected": "PyRuntimeError: NameError: name 'm' is not defined [line 3]\n"
+ },
+ {
+  "name": "recursion_limit",
+  "source": "def down(n):\n    return down(n + 1)\n\nprint(down(0))\n",
+  "expected": "InternalError: maximum recursion depth exceeded\n"
+ },
+ {
+  "name": "type_error_add",
+  "source": "print(1 + None)\n",
+  "expected": "PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]\n"
+ },
+ {
+  "name": "type_error_arity",
+  "source": "def f(n):\n    return n\n\nprint(f(1, 2))\n",
+  "expected": "PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]\n"
+ },
+ {
+  "name": "type_error_not_callable",
+  "source": "x = 5\nx(1)\n",
+  "expected": "PyRuntimeError: TypeError: 'int' object is not callable [line 2]\n"
+ }
+]

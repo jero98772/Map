@@ -1,0 +1,7 @@
+def parse_simple_stmt(self):
+    save = self.pos
+    node = self.parse_assign()        # NAME '=' expr
+    if node is not None:
+        return node
+    self.pos = save                   # BACKTRACK: undo what assign consumed
+    return self.parse_expr_stmt()

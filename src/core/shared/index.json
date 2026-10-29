@@ -1,0 +1,113 @@
+{
+ "program_a": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "program_b": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "grammar": {
+  "hl": "plaintext",
+  "out": false,
+  "ref": ""
+ },
+ "ordered_choice": {
+  "hl": "python",
+  "out": false,
+  "ref": ""
+ },
+ "packrat": {
+  "hl": "python",
+  "out": false,
+  "ref": ""
+ },
+ "err_parse_missing_colon": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_parse_unclosed_paren": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_parse_def_no_paren": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_parse_double_equal": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_parse_missing_indent": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_parse_dangling_op": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_lex_bad_dedent": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "err_lex_bad_char": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "ast_a": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ },
+ "ast_b": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ },
+ "err_rt_name_error_deep": {
+  "hl": "python",
+  "out": false,
+  "ref": "",
+  "runnable": true
+ },
+ "rt_name_error_deep_out": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ },
+ "cpython_traceback": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ },
+ "dis_fib_rec": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ },
+ "dis_fib_iter": {
+  "hl": "plaintext",
+  "out": true,
+  "ref": ""
+ }
+}

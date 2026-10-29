@@ -1,0 +1,15 @@
+(def builtins
+  {"print" builtin-print
+   "len" builtin-len
+   "range" builtin-range
+   "int" builtin-int
+   "float" builtin-float
+   "str" builtin-str
+   "bool" builtin-bool
+   "input" builtin-input
+   "abs" builtin-abs
+   "max" builtin-max
+   "min" builtin-min
+   "type" builtin-type
+   "append" builtin-append
+   "pop" builtin-pop})

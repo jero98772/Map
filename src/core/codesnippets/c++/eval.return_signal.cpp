@@ -1,0 +1,3 @@
+struct ReturnException {
+    Value value;
+};

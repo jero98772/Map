@@ -1,0 +1,13 @@
+program     <- stmt* EOF
+stmt        <- func_def / if_stmt / for_stmt / simple_stmt
+simple_stmt <- (return_stmt / assign / expr_stmt) NEWLINE
+assign      <- NAME '=' expr
+func_def    <- 'def' NAME '(' params? ')' ':' block
+if_stmt     <- 'if' expr ':' block ('else' ':' block)?
+for_stmt    <- 'for' NAME 'in' expr ':' block
+block       <- NEWLINE INDENT stmt+ DEDENT
+expr        <- comparison
+comparison  <- sum (('<=' / '<' / '==') sum)*
+sum         <- primary (('+' / '-') primary)*
+primary     <- atom ('(' args? ')')*
+atom        <- NAME / INT / 'True' / 'False' / 'None' / '(' expr ')'

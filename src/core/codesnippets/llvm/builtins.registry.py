@@ -1,0 +1,16 @@
+BUILTINS = {
+    "print": _builtin_print,
+    "len": _builtin_len,
+    "range": _builtin_range,
+    "int": _builtin_int,
+    "float": _builtin_float,
+    "str": _builtin_str,
+    "bool": _builtin_bool,
+    "input": _builtin_input,
+    "abs": _builtin_abs,
+    "max": _builtin_max,
+    "min": _builtin_min,
+    "type": _builtin_type,
+    "append": _builtin_append,
+    "pop": _builtin_pop,
+}
