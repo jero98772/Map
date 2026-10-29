@@ -25,6 +25,7 @@
   "theme": "Toggle light and dark mode",
   "menu": "Toggle menu",
   "footer": "© 2026 Make a Python",
+  "star": "Like it? Give the project a star on GitHub",
   "not_found": "The page \"{path}\" does not exist.",
   "home": "Go home",
   "code_in": "The code on this page is shown in",

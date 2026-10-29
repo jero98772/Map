@@ -25,6 +25,7 @@
   "theme": "Cambiar entre modo claro y oscuro",
   "menu": "Abrir o cerrar el menú",
   "footer": "© 2026 Haz un Python",
+  "star": "¿Te gusta? Dale una estrella al proyecto en GitHub",
   "not_found": "La página \"{path}\" no existe.",
   "home": "Volver al inicio",
   "code_in": "El código de esta página se muestra en",
