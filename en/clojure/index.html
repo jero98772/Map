@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/Map/static/img/favicon.ico">
+    <title>Make a Python</title>
+
+    <!-- Loaded without defer: sets data-theme on <html> before first paint -->
+    <script src="/Map/static/js/base.js"></script>
+    <link rel="stylesheet" href="/Map/static/css/base.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/clojure.min.js"></script>
+</head>
+<body>
+    
+    
+    
+    
+    
+    
+
+    <header>
+
+        <nav class="navbar" aria-label="Site options">
+            <div class="brand">
+                <img class="logo" src="/Map/static/img/logo.png" alt="Make a Python logo">
+                <h1>Make a Python</h1>
+            </div>
+            <div class="nav-links" id="nav-links">
+                
+                <div class="nav-group">
+                    <label for="lang-select">Language</label>
+                    <select id="lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/en/clojure/"
+                                selected>
+                            English
+                        </option>
+                        
+                        <option value="/Map/es/clojure/"
+                                >
+                            Español
+                        </option>
+                        
+                        <option value="/Map/ru/clojure/"
+                                >
+                            Русский
+                        </option>
+                        
+                    </select>
+                </div>
+                
+
+                
+                <div class="nav-group">
+                    <label for="prog-lang-select">Programming language</label>
+                    <select id="prog-lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/en/python/"
+                                >
+                            Python
+                        </option>
+                        
+                        <option value="/Map/en/rust/"
+                                >
+                            Rust
+                        </option>
+                        
+                        <option value="/Map/en/cpp/"
+                                >
+                            C++
+                        </option>
+                        
+                        <option value="/Map/en/java/"
+                                >
+                            Java
+                        </option>
+                        
+                        <option value="/Map/en/clojure/"
+                                selected>
+                            Clojure
+                        </option>
+                        
+                        <option value="/Map/en/llvm/"
+                                >
+                            LLVM
+                        </option>
+                        
+                    </select>
+                </div>
+                
+            </div>
+
+            <div class="nav-actions">
+                <button id="menu-toggle" class="menu-toggle" type="button"
+                        aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">☰</button>
+                <button id="theme-toggle" type="button" aria-label="Toggle light and dark mode">🌙</button>
+            </div>
+        </nav>
+        <hr>
+    </header>
+
+    <main>
+        
+<p class="subtitle">Build a Python interpreter stage by stage. The code comes from the six interpreters in this project; the animations were rendered with manim-slides.</p>
+
+<aside class="invite">
+    <h2>Build your own Python</h2>
+    <div class="invite-text"><p>Every time you type <code>python3 script.py</code>, a program reads your code and brings it to life. That program isn't magic. By the end of this page, you'll have written one yourself.</p><pre>$ python3 main.py program_a.py
+3</pre><p>That 3 will be yours. Here's the recipe: follow the chapters in order, in any language you like. Programs A and B and the tests are your checkpoints, and the six interpreters on this page are there to compare with at every step.</p></div>
+</aside>
+
+<figure class="teaser">
+    <video id="teaser" autoplay muted loop playsinline controls preload="auto"
+           aria-label="How a Python program runs, from source to output"
+           data-dark="/Map/static/video/dark/PythonExecutionJourney.mp4"
+           data-light="/Map/static/video/light/PythonExecutionJourney.mp4"></video>
+    <script>
+        (function (v) {
+            v.src = v.getAttribute('data-' + (document.documentElement.getAttribute('data-theme') || 'dark'));
+        })(document.getElementById('teaser'));
+    </script>
+</figure>
+
+<div class="layout">
+    <nav class="toc" aria-label="Chapters">
+        <b>Chapters</b>
+        <ol>
+            
+            <li><a href="#overview">Overview: the pipeline</a></li>
+            
+            <li><a href="#tokenizer">Reading: turning characters into words</a></li>
+            
+            <li><a href="#parser">Grammar: do the words form a sentence?</a></li>
+            
+            <li><a href="#ast">The skeleton: your program as a tree</a></li>
+            
+            <li><a href="#semantic">Meaning: what does each name refer to?</a></li>
+            
+            <li><a href="#memory">Bringing it to life: frames, calls, return</a></li>
+            
+            <li><a href="#errors">The error museum</a></li>
+            
+            <li><a href="#builtins">Crossing the border: print and range</a></li>
+            
+            <li><a href="#bytecode">Bonus: real CPython bytecode</a></li>
+            
+            <li><a href="#out_of_scope">Expansion packs</a></li>
+            
+            <li><a href="#your_turn">Your turn: build your own Python</a></li>
+            
+        </ol>
+        <p class="toc-lang">The code on this page is shown in <b>Clojure</b></p>
+    </nav>
+
+    <div class="chapters">
+        
+        <section class="chapter" id="overview">
+            <h2>1 · Overview: the pipeline</h2>
+            
+            <p class="chmeta">~10 min · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p><code>python_interpreter_clojure/main.clj</code>: the same pipeline with <code>defrecord</code> nodes, state in atoms and <code>defmulti</code> dispatch.</p>
+            </aside>
+            
+
+            
+
+<p>An interpreter is a program that reads another program and runs it. MAP ("Make A Python") is a tiny subset of Python, with integers, booleans, <code>None</code>, variables, <code>+ - &lt; &lt;= ==</code>, <code>if/else</code>, <code>def/return</code>, recursion, <code>for … in range(…)</code>, and the builtins <code>print</code> and <code>range</code>. Small as it is, it already needs every stage of a real interpreter.</p><ol class='pipeline'><li><b>Source</b>: the program as one string.</li><li><b>Tokenizer</b>: turns characters into words like <code>DEF</code>, <code>NAME fib_rec</code> or <code>INDENT</code>.</li><li><b>Parser</b>: checks the words against the grammar and builds a tree.</li><li><b>AST</b>: the tree of node objects (<code>FuncDef</code>, <code>If</code>, <code>BinOp</code> …).</li><li><b>Semantic analysis</b>: decides which names are local or global, and rejects programs that are wrong without running them.</li><li><b>Tree-walk evaluation + memory</b>: visits the tree, creating frames and values.</li><li><b>Output</b>: what <code>print</code> writes.</li></ol><p>Real CPython takes a side road after the AST: it compiles the tree to <b>bytecode</b> and runs that on a virtual machine. MAP never makes bytecode; it walks the tree directly.</p>
+
+
+
+<figure class="diagram">
+    <img class="only-dark" src="/Map/static/img/pipeline-programing_languages_dark.png" alt="The phases of a compiler: lexical, syntax and semantic analysis, intermediate code, optimization and code generation" loading="lazy">
+    <img class="only-light" src="/Map/static/img/pipeline-programing_languages_light.png" alt="The phases of a compiler: lexical, syntax and semantic analysis, intermediate code, optimization and code generation" loading="lazy">
+</figure>
+
+
+
+<p>Two running examples are followed through every chapter:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program A — fib_rec(4)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program B — fib_iter(6)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_iter(n):
+    if n &lt;= 1:
+        return n
+    a = 0
+    b = 1
+    for i in range(2, n + 1):
+        temp = a + b
+        a = b
+        b = temp
+    return b
+
+print(fib_iter(6))
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p>Running them with the reference interpreter: <code>python3 python_interpreter_in_python/main.py tutorial/examples/program_a.py</code> prints <b>3</b>, and program B prints <b>8</b>.</p><h3>Six interpreters, one design</h3><p>The project contains the same interpreter written six times. Pick one with the <b>Programming language</b> selector at the top: every code block on this page then shows that interpreter. What they all share is the pipeline above; an indent stack that produces INDENT and DEDENT; a recursive-descent parser with the same precedence chain; roughly 23 node types named after CPython's <code>ast</code> module; an <code>Environment{vars, parent}</code>; errors carrying a line number; and the same 14 builtins. How each language expresses them:</p><details><summary>Compare the six implementations</summary><div class='tablewrap'><table><tr><th></th><th>Python</th><th>Rust</th><th>C++</th><th>Java</th><th>Clojure</th><th>LLVM</th></tr><tr><td>Token type</td><td><code>TT(Enum)</code> + <code>@dataclass Token</code></td><td><code>enum TokKind</code> with payload + <code>Tag</code></td><td><code>enum class TT</code> + tagged union <code>TokenValue</code></td><td><code>enum TT</code> + <code>record Token</code></td><td>keywords + <code>defrecord Token</code></td><td>same as Python, table-driven operators</td></tr><tr><td>Parser</td><td>recursive descent, 1–2 token lookahead</td><td>same</td><td>same</td><td>same</td><td>same, state in an atom</td><td>same</td></tr><tr><td>AST</td><td><code>@dataclass</code> subclasses</td><td><code>enum Expr / enum Stmt</code>, <code>Box</code></td><td>one fat <code>ASTNode</code> + <code>NodeType</code> tag</td><td><code>sealed interface Node</code> + records</td><td><code>defrecord</code> per node</td><td>same dataclasses</td></tr><tr><td>Dispatch</td><td><code>getattr(self, "_eval_"+cls)</code></td><td><code>match</code></td><td><code>switch(node-&gt;type)</code></td><td>pattern <code>switch</code></td><td><code>defmulti</code> on type</td><td><code>getattr</code> → emits IR</td></tr><tr><td>Environment</td><td>dict + parent</td><td><code>Rc&lt;Env&gt;</code>, <code>RefCell&lt;HashMap&gt;</code></td><td><code>shared_ptr&lt;Environment&gt;</code></td><td><code>HashMap</code> + parent</td><td><code>Env{vars: atom, parent}</code></td><td><code>alloca</code> locals + global slots</td></tr><tr><td>return</td><td><code>raise ReturnSignal</code></td><td><code>Err(Flow::Return(v))</code></td><td><code>throw ReturnException</code></td><td><code>throw ReturnSignal</code></td><td><code>ex-info</code></td><td>native <code>ret</code></td></tr><tr><td>Errors</td><td>PyError(msg, line)</td><td>PyError enum, line</td><td>EduPyError, line</td><td>PyError, line</td><td>ex-info, line</td><td>PyError, line</td></tr><tr><td>Recursion limit</td><td>host limit → InternalError</td><td>none</td><td>none</td><td>StackOverflowError → RecursionError</td><td>none</td><td><code>MAX_DEPTH = 4000</code></td></tr></table></div><p>These six are only examples. The same design can be ported to any other language, but each implementation will differ: every language has its own way to express tokens, nodes, dispatch and errors.</p></details>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/pipeline.gif" alt="The pipeline" loading="lazy"
+         data-dark="/Map/static/gif/dark/pipeline.gif"
+         data-light="/Map/static/gif/light/pipeline.gif">
+    <figcaption>The pipeline · <a href="/Map/static/video/dark/pipeline.mp4"
+         data-dark="/Map/static/video/dark/pipeline.mp4"
+         data-light="/Map/static/video/light/pipeline.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="tokenizer">
+            <h2>2 · Reading: turning characters into words</h2>
+            <p class="term">Tokenizer</p>
+            <p class="chmeta">~30 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p>All lexer state lives in one atom; the stack is a vector used with <code>conj</code>/<code>pop</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Think of reading a sentence. Before you can understand it, you split it into words. The tokenizer does exactly that for your program.</p><p>The tokenizer (also called lexer or scanner) reads the source <b>one character at a time</b> and groups characters into <b>tokens</b>. The method is a hand-written scanner: a loop that asks for the next token until the end of the text. Each call looks at the current character and decides what kind of token starts there.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the scanner loop</span>
+        <span class="ref">python_interpreter_clojure/main.clj:294–302</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn tokenize! [st]
+  (while (&lt; (:pos @st) (src-len st))
+    (next-token! st))
+  (close-all-indents! st)
+  (let [toks (:tokens @st)]
+    (when (or (empty? toks) (not (contains? #{:newline :dedent} (:type (last toks)))))
+      (emit! st :newline &#34;\n&#34; (:line @st) (:col @st))))
+  (emit! st :eof nil (:line @st) (:col @st))
+  (:tokens @st))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">dispatch on the current character</span>
+        <span class="ref">python_interpreter_clojure/main.clj:150–171</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- next-token! [st]
+  (if (and (:at-line-start @st) (zero? (:paren-depth @st)))
+    (handle-indentation! st)
+    (let [ch (cur st)]
+      (cond
+        (or (= ch \space) (= ch \tab)) (adv! st)
+
+        (= ch \newline)
+        (let [[ln cl] (here st)]
+          (adv! st)
+          (when (zero? (:paren-depth @st))
+            (emit! st :newline &#34;\n&#34; ln cl)
+            (swap! st assoc :at-line-start true)))
+
+        (= ch \return) (adv! st)
+
+        (= ch \#) (do (while (not (contains? #{\newline \u0000} (cur st))) (adv! st)))
+
+        (contains? #{\&#34; \&#39;} ch) (read-string-lit! st)
+        (digit? ch) (read-number! st)
+        (name-start? ch) (read-name! st)
+        :else (read-operator! st)))))
+</code></pre>
+</figure>
+
+
+
+
+<p>A token remembers its <b>type</b>, its <b>value</b> and <b>where it came from</b> (line and column). Error messages need that position later.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the token</span>
+        <span class="ref">python_interpreter_clojure/main.clj:83–83</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defrecord Token [type value line col])
+</code></pre>
+</figure>
+
+
+
+
+<h3>INDENT and DEDENT</h3><p>Think of nested boxes: every box you open, you must close. INDENT opens a box, DEDENT closes one.</p><p>Python has no braces, so blocks come from leading whitespace. At the start of every line the lexer counts the spaces and compares the count with the top of a stack, <code>indent_stack</code>, which starts as <code>[0]</code>:</p><ul><li>more spaces than the top: push the new width and emit <code>INDENT</code></li><li>fewer spaces: pop and emit one <code>DEDENT</code> per popped level</li><li>after popping, the width must equal the new top, otherwise <code>IndentationError</code></li><li>blank lines and comment-only lines are skipped and never touch the stack.</li></ul><p>At the end of the file, every level still open gets a DEDENT. That is why INDENT and DEDENT always balance.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">handling indentation</span>
+        <span class="ref">python_interpreter_clojure/main.clj:173–203</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- handle-indentation! [st]
+  (let [indent (atom 0)]
+    (while (contains? #{\space \tab} (cur st))
+      (reset! indent (if (= (cur st) \tab)
+                       (* (+ (quot @indent 8) 1) 8)
+                       (inc @indent)))
+      (adv! st))
+    (let [ch (cur st)]
+      (if (or (contains? #{\newline \return \u0000} ch) (= ch \#))
+        (do
+          (when (= ch \#)
+            (while (not (contains? #{\newline \u0000} (cur st))) (adv! st)))
+          (when (= (cur st) \newline) (adv! st)))
+        (do
+          (swap! st assoc :at-line-start false)
+          (let [current (peek (:indent-stack @st))]
+            (cond
+              (&gt; @indent current)
+              (do (swap! st update :indent-stack conj @indent)
+                  (emit! st :indent @indent (:line @st) 1))
+
+              (&lt; @indent current)
+              (do
+                (while (and (&gt; (count (:indent-stack @st)) 1)
+                            (&gt; (peek (:indent-stack @st)) @indent))
+                  (swap! st update :indent-stack pop)
+                  (emit! st :dedent @indent (:line @st) 1))
+                (when (not= (peek (:indent-stack @st)) @indent)
+                  (lex-err! st &#34;IndentationError: unindent does not match any outer indentation level&#34;)))
+
+              :else nil)))))))
+</code></pre>
+</figure>
+
+
+
+
+<h3>Program A as tokens</h3><p>44 tokens, straight from <code>Lexer(source).tokenize()</code>:</p><details class='predict'><summary>Guess first: how many INDENT and how many DEDENT tokens does Program A have?</summary><p><b>2 of each.</b> One INDENT for the body of <code>fib_rec</code> and one for the body of <code>if</code>. Both close again, so there are 2 DEDENTs.</p></details>
+
+
+
+<details><summary>Show all 44 tokens</summary><div class='tablewrap'><table>
+<tr><th>#</th><th>type</th><th>value</th><th>line:col</th></tr>
+<tr><td>0</td><td><code>DEF</code></td><td><code>'def'</code></td><td>1:1</td></tr>
+<tr><td>1</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>1:5</td></tr>
+<tr><td>2</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>1:12</td></tr>
+<tr><td>3</td><td><code>NAME</code></td><td><code>'n'</code></td><td>1:13</td></tr>
+<tr><td>4</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>1:14</td></tr>
+<tr><td>5</td><td><code>COLON</code></td><td><code>':'</code></td><td>1:15</td></tr>
+<tr><td>6</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>1:16</td></tr>
+<tr><td>7</td><td><code>INDENT</code></td><td><code>4</code></td><td>2:1</td></tr>
+<tr><td>8</td><td><code>IF</code></td><td><code>'if'</code></td><td>2:5</td></tr>
+<tr><td>9</td><td><code>NAME</code></td><td><code>'n'</code></td><td>2:8</td></tr>
+<tr><td>10</td><td><code>LESSEQUAL</code></td><td><code>'&lt;='</code></td><td>2:10</td></tr>
+<tr><td>11</td><td><code>INTEGER</code></td><td><code>1</code></td><td>2:13</td></tr>
+<tr><td>12</td><td><code>COLON</code></td><td><code>':'</code></td><td>2:14</td></tr>
+<tr><td>13</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>2:15</td></tr>
+<tr><td>14</td><td><code>INDENT</code></td><td><code>8</code></td><td>3:1</td></tr>
+<tr><td>15</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>3:9</td></tr>
+<tr><td>16</td><td><code>NAME</code></td><td><code>'n'</code></td><td>3:16</td></tr>
+<tr><td>17</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>3:17</td></tr>
+<tr><td>18</td><td><code>DEDENT</code></td><td><code>4</code></td><td>4:1</td></tr>
+<tr><td>19</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>4:5</td></tr>
+<tr><td>20</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:12</td></tr>
+<tr><td>21</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:19</td></tr>
+<tr><td>22</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:20</td></tr>
+<tr><td>23</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:22</td></tr>
+<tr><td>24</td><td><code>INTEGER</code></td><td><code>1</code></td><td>4:24</td></tr>
+<tr><td>25</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:25</td></tr>
+<tr><td>26</td><td><code>PLUS</code></td><td><code>'+'</code></td><td>4:27</td></tr>
+<tr><td>27</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:29</td></tr>
+<tr><td>28</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:36</td></tr>
+<tr><td>29</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:37</td></tr>
+<tr><td>30</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:39</td></tr>
+<tr><td>31</td><td><code>INTEGER</code></td><td><code>2</code></td><td>4:41</td></tr>
+<tr><td>32</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:42</td></tr>
+<tr><td>33</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>4:43</td></tr>
+<tr><td>34</td><td><code>DEDENT</code></td><td><code>0</code></td><td>6:1</td></tr>
+<tr><td>35</td><td><code>NAME</code></td><td><code>'print'</code></td><td>6:1</td></tr>
+<tr><td>36</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:6</td></tr>
+<tr><td>37</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>6:7</td></tr>
+<tr><td>38</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:14</td></tr>
+<tr><td>39</td><td><code>INTEGER</code></td><td><code>4</code></td><td>6:15</td></tr>
+<tr><td>40</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:16</td></tr>
+<tr><td>41</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:17</td></tr>
+<tr><td>42</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>6:18</td></tr>
+<tr><td>43</td><td><code>EOF</code></td><td><code>None</code></td><td>7:1</td></tr>
+</table></div></details>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tokens_a.gif" alt="Program A token by token" loading="lazy"
+         data-dark="/Map/static/gif/dark/tokens_a.gif"
+         data-light="/Map/static/gif/light/tokens_a.gif">
+    <figcaption>Program A token by token · <a href="/Map/static/video/dark/tokens_a.mp4"
+         data-dark="/Map/static/video/dark/tokens_a.mp4"
+         data-light="/Map/static/video/light/tokens_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/indent_b.gif" alt="INDENT and DEDENT in Program B" loading="lazy"
+         data-dark="/Map/static/gif/dark/indent_b.gif"
+         data-light="/Map/static/gif/light/indent_b.gif">
+    <figcaption>INDENT and DEDENT in Program B · <a href="/Map/static/video/dark/indent_b.mp4"
+         data-dark="/Map/static/video/dark/indent_b.mp4"
+         data-light="/Map/static/video/light/indent_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add <code>!=</code> to your tokenizer.</p>
+                <p><b>Break it:</b> indent one line with a tab and the next with spaces. What happens?</p>
+                <p><b>What you have now:</b> Your interpreter can read words. It can't understand sentences yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="parser">
+            <h2>3 · Grammar: do the words form a sentence?</h2>
+            <p class="term">Parser (syntax analysis, PEG)</p>
+            <p class="chmeta">~45 min · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p>Parser state is an atom <code>{:tokens :pos}</code>; each rule returns a record.</p>
+            </aside>
+            
+
+            
+
+<p>Think of a grammar teacher diagramming a sentence: subject here, verb there. The parser does the same with your tokens. It checks that they fit the grammar and draws the structure.</p><p>The parser checks that the tokens form a valid program and builds the tree. MAP's grammar written as a <b>PEG</b> (Parsing Expression Grammar):</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">MAP grammar (subset of the EBNF comment in main.py:656)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext">program     &lt;- stmt* EOF
+stmt        &lt;- func_def / if_stmt / for_stmt / simple_stmt
+simple_stmt &lt;- (return_stmt / assign / expr_stmt) NEWLINE
+assign      &lt;- NAME &#39;=&#39; expr
+func_def    &lt;- &#39;def&#39; NAME &#39;(&#39; params? &#39;)&#39; &#39;:&#39; block
+if_stmt     &lt;- &#39;if&#39; expr &#39;:&#39; block (&#39;else&#39; &#39;:&#39; block)?
+for_stmt    &lt;- &#39;for&#39; NAME &#39;in&#39; expr &#39;:&#39; block
+block       &lt;- NEWLINE INDENT stmt+ DEDENT
+expr        &lt;- comparison
+comparison  &lt;- sum ((&#39;&lt;=&#39; / &#39;&lt;&#39; / &#39;==&#39;) sum)*
+sum         &lt;- primary ((&#39;+&#39; / &#39;-&#39;) primary)*
+primary     &lt;- atom (&#39;(&#39; args? &#39;)&#39;)*
+atom        &lt;- NAME / INT / &#39;True&#39; / &#39;False&#39; / &#39;None&#39; / &#39;(&#39; expr &#39;)&#39;
+</code></pre>
+</figure>
+
+
+
+
+<p>How to read it: <code>e1 e2</code> is a sequence, <code>e*</code> is "zero or more" (a while loop), <code>e?</code> is optional, and <code>e1 / e2</code> is an <b>ordered choice</b>. The parser tries <code>e1</code> first and only tries <code>e2</code> if <code>e1</code> fails. There is never any ambiguity, because the first alternative that succeeds wins.</p><div class='deepdive'><h3>Optional deep dive: Backtracking</h3><p>You can skip this part. None of the six interpreters backtracks, but it explains what "PEG" means.</p><p>When an alternative fails halfway, the parser must <b>rewind</b>. Before trying an alternative it saves the cursor position, and on failure it restores it:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">ordered choice by hand (the technique from peg.txt)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def parse_simple_stmt(self):
+    save = self.pos
+    node = self.parse_assign()        # NAME &#39;=&#39; expr
+    if node is not None:
+        return node
+    self.pos = save                   # BACKTRACK: undo what assign consumed
+    return self.parse_expr_stmt()</code></pre>
+</figure>
+
+
+
+
+<p>Example: on <code>print(fib_rec(4))</code>, <code>assign</code> matches <code>NAME print</code>, then needs <code>'='</code> but finds <code>'('</code>. It fails, the cursor goes back to 0, and <code>expr_stmt</code> parses the whole line.</p><h3>Packrat memoization</h3><p>Backtracking can make the parser repeat work, for example in <code>comparison &lt;- sum '&lt;=' sum / sum</code>. Both alternatives start by parsing <code>sum</code> at the same position. A <b>packrat</b> parser keeps a memo table <code>(rule, position) → (node, end position)</code>, so each rule runs at most once per position and parsing stays linear:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">packrat in a few lines</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def memo(rule):
+    def wrapper(self):
+        key = (rule.__name__, self.pos)
+        if key in self.memo:
+            node, self.pos = self.memo[key]     # hit: jump straight to the end
+            return node
+        node = rule(self)
+        self.memo[key] = (node, self.pos)
+        return node
+    return wrapper</code></pre>
+</figure>
+
+
+
+
+</div><aside class='history'><h3>History corner · Before PEG: CPython's LL(1) parser</h3><p>Picture Python 3.8. You type <code>f() = 1</code>. The parser looks at it and says: fine! Only a later stage notices the problem and complains: "can't assign to function call". Why did the parser let it through? Because of how it was built.</p><p>For almost 30 years CPython did not use a PEG. Until Python 3.8 its parser was generated by <b>pgen</b> from the file <code>Grammar/Grammar</code>, and it was an <b>LL(1)</b> parser:</p><ul><li><b>L</b>: it reads the tokens from <b>L</b>eft to right;</li><li><b>L</b>: it builds the <b>L</b>eftmost derivation (it always expands the leftmost rule first, top-down);</li><li><b>(1)</b>: it decides with exactly <b>1</b> token of lookahead.</li></ul><p>An LL(1) parser is table-driven and never backtracks. It keeps a stack of rules still to match, and a table maps <code>(rule on top of the stack, next token)</code> to exactly one production. If the cell is empty, the program is a SyntaxError.</p><p>That power has limits. The grammar cannot be left-recursive, and every choice must be decidable from one token. So some rules were written too loosely and repaired later: <code>f() = 1</code> parsed as a valid statement and was only rejected while building the AST ("can't assign to function call"). Parenthesised <code>with</code> statements and <code>match</code> could not be expressed at all. <b>PEP 617</b> replaced it with the PEG parser in <b>Python 3.9</b> (the old one was still available with <code>-X oldparser</code>), and the LL(1) parser was removed in <b>3.10</b>.</p><p>MAP's parser sits close to the old one: it is hand-written recursive descent that decides with one token, or two at <code>NAME '='</code> (LL(2)). That is why it never needs the PEG backtracking explained above.</p>
+
+
+
+<div class="videos">
+<figure class="video">
+    <img src="/Map/static/gif/dark/ll1.gif" alt="LL(1) table-driven parsing of id + id" loading="lazy"
+         data-dark="/Map/static/gif/dark/ll1.gif"
+         data-light="/Map/static/gif/light/ll1.gif">
+    <figcaption>LL(1) table-driven parsing of id + id · <a href="/Map/static/video/dark/ll1.mp4"
+         data-dark="/Map/static/video/dark/ll1.mp4"
+         data-light="/Map/static/video/light/ll1.mp4">open video</a></figcaption>
+</figure>
+</div>
+
+
+
+</aside><h3>What the interpreters actually do</h3><p>All six interpreters call their parser "PEG-style", but they <b>never need to rewind</b>. Each ordered choice is decided by <b>peeking</b> one or two tokens ahead. That works because MAP's alternatives start with different tokens (<code>def</code>, <code>if</code>, <code>for</code>), or can be told apart by the second token (<code>NAME '='</code>). The result is the same tree, built without backtracking or memoization.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">statements: ordered choice decided by lookahead</span>
+        <span class="ref">python_interpreter_clojure/main.clj:438–445, 447–465</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- p-stmt [ps]
+  (p-skip-newlines! ps)
+  (cond
+    (p-match ps :def) (p-func-def ps)
+    (p-match ps :if) (p-if-stmt ps)
+    (p-match ps :while) (p-while-stmt ps)
+    (p-match ps :for) (p-for-stmt ps)
+    :else (p-simple-stmt ps)))
+
+(defn- p-simple-stmt [ps]
+  (let [node
+        (cond
+          (p-check ps :return)
+          (do (p-advance! ps) (p-return-stmt ps))
+
+          (and (p-check ps :name) (= (:type (p-peek ps 1)) :equal))
+          (p-assign ps)
+
+          (and (p-check ps :name)
+               (contains? #{:plusequal :minequal :starequal :slashequal} (:type (p-peek ps 1))))
+          (p-aug-assign ps)
+
+          :else (-&gt;ExprStmt (p-expr ps) (:line (p-cur ps))))]
+    (cond
+      (p-check ps :newline) (p-advance! ps)
+      (p-check ps :eof :dedent) nil
+      :else (p-err! ps (str &#34;expected newline after statement, got &#34; (pr-str (tt-str (:type (p-cur ps)))))))
+    node))
+</code></pre>
+</figure>
+
+
+
+
+<p>Each grammar rule is one function that <b>returns an AST node</b>. Precedence comes from which rule calls which: <code>comparison</code> calls <code>sum</code>, so <code>+</code> binds tighter than <code>&lt;=</code>.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">comparison and sum build Compare / BinOp nodes</span>
+        <span class="ref">python_interpreter_clojure/main.clj:572–572, 574–580, 582–588</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(def ^:private compare-ops [:eqequal :notequal :less :lessequal :greater :greaterequal])
+
+(defn- p-comparison [ps]
+  (loop [node (p-sum ps)]
+    (if (apply p-check ps compare-ops)
+      (let [op (p-advance! ps)
+            right (p-sum ps)]
+        (recur (-&gt;Compare node (:value op) right (:line node))))
+      node)))
+
+(defn- p-sum [ps]
+  (loop [node (p-term ps)]
+    (if (p-check ps :plus :minus)
+      (let [op (:value (p-advance! ps))
+            right (p-term ps)]
+        (recur (-&gt;BinOp node op right (:line node))))
+      node)))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">how a SyntaxError is raised</span>
+        <span class="ref">python_interpreter_clojure/main.clj:402–403, 405–413</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- p-err! [ps msg]
+  (throw (parse-error (str &#34;SyntaxError: &#34; msg) (:line (p-cur ps)))))
+
+(defn- p-expect!
+  ([ps tt] (p-expect! ps tt nil))
+  ([ps tt msg]
+   (if (p-check ps tt)
+     (p-advance! ps)
+     (let [got (p-cur ps)
+           desc (or msg (str &#34;expected &#39;&#34; (tt-str tt) &#34;&#39;, got &#39;&#34; (tt-str (:type got))
+                              &#34;&#39; (&#34; (pr-str (:value got)) &#34;)&#34;))]
+       (throw (parse-error (str &#34;SyntaxError: &#34; desc) (:line got)))))))
+</code></pre>
+</figure>
+
+
+
+
+<h3>Invalid programs</h3><p>Each program below was run through the real lexer and parser. The message is exactly what <code>main.py</code> prints, and "stops at" is the token the parser was looking at when it gave up.</p>
+
+
+
+<div class="errgrid">
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_colon.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1
+        return n
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;:&#39; after if-condition [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;:&#39;</p></details>
+        <p class="where">Stops at: line 2, column 14</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_unclosed_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">print(fib_rec(4)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;)&#39; after arguments [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: &#39;(&#39; was never closed</p></details>
+        <p class="where">Stops at: line 2, column 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_def_no_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec n:
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;(&#39; after function name [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;(&#39;</p></details>
+        <p class="where">Stops at: line 1, column 13</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_double_equal.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">a = = 1
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;=&#39; (&#39;=&#39;) [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1, column 5</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_indent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">if True:
+print(1)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected indented block [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: IndentationError: expected an indented block after &#39;if&#39; statement on line 1</p></details>
+        <p class="where">Stops at: line 2, column 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_dangling_op.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">n = 1 +
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;NEWLINE&#39; (&#39;\n&#39;) [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1, column 8</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_dedent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+  return fib_rec(n - 1) + fib_rec(n - 2)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: IndentationError: unindent does not match any outer indentation level</p></details>
+        <p class="where">Stops at: line 4</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_char.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">x = 1 $ 2
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: SyntaxError: unexpected character &#39;$&#39; [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1</p>
+    </div>
+    
+</div>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/backtracking.gif" alt="Ordered choice and backtracking" loading="lazy"
+         data-dark="/Map/static/gif/dark/backtracking.gif"
+         data-light="/Map/static/gif/light/backtracking.gif">
+    <figcaption>Ordered choice and backtracking · <a href="/Map/static/video/dark/backtracking.mp4"
+         data-dark="/Map/static/video/dark/backtracking.mp4"
+         data-light="/Map/static/video/light/backtracking.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/packrat.gif" alt="Packrat memoization" loading="lazy"
+         data-dark="/Map/static/gif/dark/packrat.gif"
+         data-light="/Map/static/gif/light/packrat.gif">
+    <figcaption>Packrat memoization · <a href="/Map/static/video/dark/packrat.mp4"
+         data-dark="/Map/static/video/dark/packrat.mp4"
+         data-light="/Map/static/video/light/packrat.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/recursive_descent.gif" alt="Recursive descent in main.py" loading="lazy"
+         data-dark="/Map/static/gif/dark/recursive_descent.gif"
+         data-light="/Map/static/gif/light/recursive_descent.gif">
+    <figcaption>Recursive descent in main.py · <a href="/Map/static/video/dark/recursive_descent.mp4"
+         data-dark="/Map/static/video/dark/recursive_descent.mp4"
+         data-light="/Map/static/video/light/recursive_descent.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add <code>!=</code> next to <code>==</code> in your <code>comparison</code> rule.</p>
+                <p><b>Break it:</b> delete the colon after an <code>if</code>. Does your message match the one above?</p>
+                <p><b>What you have now:</b> Your interpreter knows when a sentence is grammatical. It doesn't know what it means yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="ast">
+            <h2>4 · The skeleton: your program as a tree</h2>
+            <p class="term">AST and tree walk</p>
+            <p class="chmeta">~20 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p><code>defrecord</code> per node; visiting is <code>defmulti exec-node</code> dispatching on <code>type</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Take a sentence and remove the punctuation. What is left is the skeleton: who does what to whom. The AST is the skeleton of your program.</p><p>The <b>Abstract Syntax Tree</b> keeps only what matters for running the program. There are no parentheses, colons or indentation; those exist only to shape the tree. Every node is a small class:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">base class and root</span>
+        <span class="ref">python_interpreter_clojure/main.clj:314–314</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defrecord Program [body line])                    ; ast.Module
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">expression nodes</span>
+        <span class="ref">python_interpreter_clojure/main.clj:316–330</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defrecord IntLiteral [value line])                 ; ast.Constant(int)
+(defrecord FloatLiteral [value line])                ; ast.Constant(float)
+(defrecord StringLiteral [value line])               ; ast.Constant(str)
+(defrecord BoolLiteral [value line])                 ; ast.Constant(bool)
+(defrecord NoneLiteral [line])                       ; ast.Constant(None)
+
+(defrecord Name [id line])                           ; ast.Name(id, ctx)
+(defrecord ListLiteral [elts line])                  ; ast.List(elts, ctx)
+(defrecord Subscript [value index line])             ; ast.Subscript(value, slice, ctx)
+(defrecord BinOp [left op right line])               ; ast.BinOp(left, op, right)
+(defrecord UnaryOp [op operand line])                ; ast.UnaryOp(op, operand)
+(defrecord Compare [left op right line])             ; ast.Compare(left, ops, comparators)
+(defrecord BoolOp [op values line])                  ; ast.BoolOp(op, values)
+(defrecord Call [func args line])                    ; ast.Call(func, args, keywords)
+(defrecord MethodCall [obj method args line])        ; ast.Call(func=Attribute(...), args)
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">statement nodes</span>
+        <span class="ref">python_interpreter_clojure/main.clj:332–338, 339–339</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defrecord Assign [target value line])               ; ast.Assign(targets, value)
+(defrecord AugAssign [target op value line])         ; ast.AugAssign(target, op, value)
+(defrecord ExprStmt [expr line])                     ; ast.Expr(value)
+(defrecord Return [value line])                      ; ast.Return(value)
+(defrecord If [test body orelse line])               ; ast.If(test, body, orelse)
+(defrecord While [test body line])                   ; ast.While(test, body, orelse)
+(defrecord For [target iter body line])              ; ast.For(target, iter, body)
+
+(defrecord FuncDef [name params body line])          ; ast.FunctionDef(name, args, body)
+</code></pre>
+</figure>
+
+
+
+
+<p><b>Composite pattern.</b> A node can contain other nodes (a <code>FuncDef</code> has a <code>body</code>, a <code>BinOp</code> has <code>left</code>/<code>right</code>), and code treats a single node and a whole subtree the same way. <code>Name</code> and the literals are the leaves.</p><details class='predict'><summary>Before you scroll: sketch the tree for <code>fib_rec(n - 1) + fib_rec(n - 2)</code>.</summary><p>A <code>BinOp '+'</code> with two children. Each child is a <code>Call</code> to <code>Name('fib_rec')</code> whose argument is a <code>BinOp '-'</code> of <code>Name('n')</code> and an <code>IntLiteral</code>. Find it in the tree for A below.</p></details><h3>The trees for A and B</h3><p>This is what <code>python3 main.py --ast</code> prints:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program A</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_rec&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Return
+      BinOp op=&#39;+&#39;
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(2)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_rec&#39;)
+        IntLiteral(4)
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program B</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_iter&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Assign target=&#39;a&#39;
+      IntLiteral(0)
+    Assign target=&#39;b&#39;
+      IntLiteral(1)
+    For target=&#39;i&#39;
+      iter:
+        Call
+          Name(&#39;range&#39;)
+          IntLiteral(2)
+          BinOp op=&#39;+&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+      body:
+        Assign target=&#39;temp&#39;
+          BinOp op=&#39;+&#39;
+            Name(&#39;a&#39;)
+            Name(&#39;b&#39;)
+        Assign target=&#39;a&#39;
+          Name(&#39;b&#39;)
+        Assign target=&#39;b&#39;
+          Name(&#39;temp&#39;)
+    Return
+      Name(&#39;b&#39;)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_iter&#39;)
+        IntLiteral(6)
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<h3>Walking the tree: Visitor</h3><p>To do something with every node (print it, check it, run it) you need code per node type. The <b>Visitor pattern</b> keeps that code out of the node classes: a visitor has one function per node type, and a dispatcher picks the right one:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the dispatcher: pick the handler for the node&#39;s type</span>
+        <span class="ref">python_interpreter_clojure/main.clj:904–908</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defmulti exec-node (fn [node _env] (type node)))
+(defmulti eval-node (fn [node _env] (type node)))
+
+(defn exec-stmts [stmts env]
+  (doseq [s stmts] (exec-node s env)))
+</code></pre>
+</figure>
+
+
+
+
+<p>A node's handler visits its children by calling the dispatcher again, which gives a depth-first walk. The evaluator itself is the <b>Interpreter pattern</b>: each grammar construct has a class, and evaluating the tree means asking each node to evaluate itself.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tree_a.gif" alt="Program A: tree construction" loading="lazy"
+         data-dark="/Map/static/gif/dark/tree_a.gif"
+         data-light="/Map/static/gif/light/tree_a.gif">
+    <figcaption>Program A: tree construction · <a href="/Map/static/video/dark/tree_a.mp4"
+         data-dark="/Map/static/video/dark/tree_a.mp4"
+         data-light="/Map/static/video/light/tree_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/walk_a.gif" alt="Program A: depth-first walk" loading="lazy"
+         data-dark="/Map/static/gif/dark/walk_a.gif"
+         data-light="/Map/static/gif/light/walk_a.gif">
+    <figcaption>Program A: depth-first walk · <a href="/Map/static/video/dark/walk_a.mp4"
+         data-dark="/Map/static/video/dark/walk_a.mp4"
+         data-light="/Map/static/video/light/walk_a.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> print your tree for Program B and compare it with the one above.</p>
+                <p><b>Break it:</b> remove the handler for one node type. What does your dispatcher do when it meets that node?</p>
+                <p><b>What you have now:</b> Your program is a tree you can walk. Nothing runs yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="semantic">
+            <h2>5 · Meaning: what does each name refer to?</h2>
+            <p class="term">Semantic analysis</p>
+            <p class="chmeta">~15 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p>No semantic pass; a top-level <code>return</code> surfaces as an InternalError.</p>
+            </aside>
+            
+
+            
+
+<details class='predict'><summary>What does this print?<pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></summary><p>Most people guess <b>1</b>. CPython raises <code>UnboundLocalError</code>, and MAP prints 1. This chapter explains why.</p></details><p>Think of an environment as a sticky note. It lists some names and their values, and points to the note behind it. To find a name, you read your note first, then the one behind, and so on.</p><p>A program can be grammatically correct and still be wrong. <b>Semantic analysis</b> is a pass over the AST, after parsing and before running, that works out what names mean and rejects what can be rejected early.</p><h3>Scope resolution: local or global?</h3><p>Python's rule: <b>a name that is assigned anywhere in a function body is local to the whole function.</b> Parameters are local too. Any other name is looked up in the global scope, then in the builtins. For Program B:</p><div class='tablewrap'><table><tr><th>scope</th><th>name</th><th>kind</th></tr><tr><td><code>global</code></td><td><code>print</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>range</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>fib_iter</code></td><td>global (function)</td></tr><tr><td><code>fib_iter</code></td><td><code>n</code></td><td>local (parameter)</td></tr><tr><td><code>fib_iter</code></td><td><code>a</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>b</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>i</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>temp</code></td><td>local</td></tr></table></div><p>In Program A, <code>fib_rec</code> is used inside its own body but never assigned there, so it is <b>global</b>. That is how recursion finds the function. The table above is computed from the real AST by <code>capture.scope_table</code>; MAP itself has no semantic pass.</p><h3>Errors found before running vs at runtime</h3><div class='tablewrap'><table><tr><th>program</th><th>CPython 3.14</th><th>MAP</th></tr><tr><td><pre>return 5</pre></td><td>SyntaxError: 'return' outside function</td><td>InternalError: 5</td></tr><tr><td><pre>def f(n, n):
+    return n
+
+print(f(1, 2))</pre></td><td>SyntaxError: duplicate argument 'n' in function definition</td><td>2</td></tr><tr><td><pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></td><td>UnboundLocalError: cannot access local variable 'x' where it is not associated with a value</td><td>1</td></tr><tr><td><pre>def f():
+    return g()
+
+def g():
+    return 1
+
+print(f())</pre></td><td>1</td><td>1</td></tr></table></div><ul><li><code>'return' outside function</code> and <code>duplicate argument</code> are caught by CPython's compiler <b>before any code runs</b>. None of the six interpreters has a full semantic pass. MAP runs the first program anyway: the return signal escapes to the top and is reported as an InternalError. It silently accepts the duplicate parameter.</li><li><code>UnboundLocalError</code>: CPython decided at compile time that <code>x</code> is local in <code>f</code> (it is assigned on line 4), so reading it on line 3 fails. MAP has no such pass. Its environment lookup walks up to the global <code>x</code> and prints 1, which is a known difference.</li><li><b>NameError cannot be detected early.</b> In the last program, <code>f</code> mentions <code>g</code> before <code>g</code> exists. By the time <code>f()</code> runs, <code>g</code> has been defined. Whether a global name exists depends on what has executed so far (definitions can be conditional), so the check must happen during the lookup itself.</li></ul>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Environment: where NameError is raised (at runtime)</span>
+        <span class="ref">python_interpreter_clojure/main.clj:686–715</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defrecord Env [vars parent])
+
+(defn new-env
+  ([] (-&gt;Env (atom {}) nil))
+  ([parent] (-&gt;Env (atom {}) parent)))
+
+(defn env-owns? [env nm]
+  (or (contains? @(:vars env) nm)
+      (and (:parent env) (env-owns? (:parent env) nm))))
+
+(defn env-get
+  &#34;Look a name up the scope chain; raises NameError if not found.&#34;
+  [env nm line]
+  (cond
+    (contains? @(:vars env) nm) (get @(:vars env) nm)
+    (:parent env) (env-get (:parent env) nm line)
+    :else (throw (runtime-error (str &#34;NameError: name &#39;&#34; nm &#34;&#39; is not defined&#34;) line))))
+
+(defn env-set!
+  &#34;Always sets in the *current* scope (like Python assignment).&#34;
+  [env nm value]
+  (swap! (:vars env) assoc nm value))
+
+(defn env-assign!
+  &#34;Assign to the nearest scope that already owns *name*, else the current scope.&#34;
+  [env nm value line]
+  (cond
+    (contains? @(:vars env) nm) (swap! (:vars env) assoc nm value)
+    (and (:parent env) (env-owns? (:parent env) nm)) (env-assign! (:parent env) nm value line)
+    :else (swap! (:vars env) assoc nm value)))
+</code></pre>
+</figure>
+
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/scope.gif" alt="Scope resolution" loading="lazy"
+         data-dark="/Map/static/gif/dark/scope.gif"
+         data-light="/Map/static/gif/light/scope.gif">
+    <figcaption>Scope resolution · <a href="/Map/static/video/dark/scope.mp4"
+         data-dark="/Map/static/video/dark/scope.mp4"
+         data-light="/Map/static/video/light/scope.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> write a function that lists the local names of a function: its parameters plus every name assigned in its body.</p>
+                <p><b>Break it:</b> run the <code>x = 1</code> program from the top of this chapter. Does your interpreter print 1 like MAP, or fail like CPython?</p>
+                <p><b>What you have now:</b> You know where every name lives. Next, we give them values.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="memory">
+            <h2>6 · Bringing it to life: frames, calls, return</h2>
+            <p class="term">Evaluation and memory</p>
+            <p class="chmeta">~30 min · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p><code>ex-info</code> with <code>:return-signal</code> data, caught and unwrapped.</p>
+            </aside>
+            
+
+            
+
+<p>Two images help here. The call stack is a stack of plates: each call puts a plate on top, and each return takes it off. A <code>return</code> is an emergency exit: it skips every room between you and the door.</p><p>The evaluator walks the AST and does what each node says. While it runs, memory has two parts, the same ones Python Tutor draws:</p><ul><li><b>Frames</b> (left in the videos): one <code>Environment</code> per active call, mapping names to values. The global frame is created first.</li><li><b>Objects</b> (right): values that variables refer to, such as function objects. Small ints are shown inline.</li></ul><h3>Calling a function</h3><ol><li>Evaluate the callee and the arguments.</li><li>Create a <b>new Environment whose parent is the function's closure</b> (the global frame for MAP's top-level functions).</li><li>Bind each parameter to its argument.</li><li>Execute the body. <code>return</code> sends a return signal with the value, which unwinds out of nested <code>if</code>/<code>for</code> blocks to the call.</li><li>Catch it, discard the frame, and hand the value back.</li></ol>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">evaluating a Call</span>
+        <span class="ref">python_interpreter_clojure/main.clj:1080–1103</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defmethod eval-node Call [n e]
+  (let [callee (eval-node (:func n) e)
+        args (mapv #(eval-node % e) (:args n))]
+    (cond
+      (and (fn? callee) (not (instance? PyFunction callee)))
+      (callee args)
+
+      (instance? PyFunction callee)
+      (let [fn-node (:node callee)
+            arity (count (:params fn-node))]
+        (when (not= (count args) arity)
+          (throw (runtime-error (str &#34;TypeError: &#34; (:name fn-node) &#34;() takes &#34; arity
+                                      &#34; argument(s) but &#34; (count args) &#34; given&#34;) (:line n))))
+        (let [call-env (new-env (:closure callee))]
+          (doseq [[p v] (map vector (:params fn-node) args)]
+            (env-set! call-env p v))
+          (try
+            (exec-stmts (:body fn-node) call-env)
+            nil
+            (catch clojure.lang.ExceptionInfo ex
+              (if (return-signal? ex) (:value (ex-data ex)) (throw ex))))))
+
+      :else
+      (throw (runtime-error (str &#34;TypeError: &#39;&#34; (type-name callee) &#34;&#39; object is not callable&#34;) (:line n))))))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the return signal</span>
+        <span class="ref">python_interpreter_clojure/main.clj:50–53, 55–56</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn return-signal
+  &#34;Internal control-flow signal used to unwind the call stack on &#39;return&#39;.&#34;
+  [value]
+  (ex-info &#34;::return-signal::&#34; {:return-signal true :value value}))
+
+(defn return-signal? [e]
+  (and (instance? clojure.lang.ExceptionInfo e) (:return-signal (ex-data e))))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">return, if and for</span>
+        <span class="ref">python_interpreter_clojure/main.clj:953–980</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defmethod exec-node Return [node env]
+  (let [value (when (:value node) (eval-node (:value node) env))]
+    (throw (return-signal value))))
+
+(defmethod exec-node If [node env]
+  (if (ep-bool (eval-node (:test node) env))
+    (exec-stmts (:body node) env)
+    (when (seq (:orelse node)) (exec-stmts (:orelse node) env))))
+
+(defmethod exec-node While [node env]
+  (while (ep-bool (eval-node (:test node) env))
+    (exec-stmts (:body node) env)))
+
+(defmethod exec-node For [node env]
+  (let [iterable (eval-node (:iter node) env)]
+    (cond
+      (py-list? iterable)
+      (doseq [item @iterable]
+        (env-set! env (:target node) item)
+        (exec-stmts (:body node) env))
+
+      (string? iterable)
+      (doseq [item (map str iterable)]
+        (env-set! env (:target node) item)
+        (exec-stmts (:body node) env))
+
+      :else
+      (throw (runtime-error (str &#34;TypeError: &#39;&#34; (type-name iterable) &#34;&#39; object is not iterable&#34;) (:line node))))))
+</code></pre>
+</figure>
+
+
+
+
+<details class='predict'><summary>Guess first: how deep will the stack get for <code>fib_rec(4)</code>? Then watch the videos below.</summary><p>The <b>call stack</b> is the chain of active frames. In MAP it is not a separate data structure: every call is a call in the host language, so the host's own stack holds it. Program A reaches a depth of 4 frames (<code>fib_rec(4)</code> down to <code>fib_rec(1)</code>, plus global).</p></details><p>The videos show one step per executed line, recorded by an <code>Interpreter</code> subclass in <code>capture.py</code> that only watches; the evaluation is main.py's own. Program A takes 39 steps and Program B takes 25. Just before <code>fib_iter(6)</code> returns, its frame is <code>{"n": "6", "a": "5", "b": "8", "i": "6", "temp": "8"}</code> and the return value is <b>8</b>.</p><p>In the videos, watch the stack grow, then collapse back to 3.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/environments.gif" alt="Environments and calls" loading="lazy"
+         data-dark="/Map/static/gif/dark/environments.gif"
+         data-light="/Map/static/gif/light/environments.gif">
+    <figcaption>Environments and calls · <a href="/Map/static/video/dark/environments.mp4"
+         data-dark="/Map/static/video/dark/environments.mp4"
+         data-light="/Map/static/video/light/environments.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_a.gif" alt="Program A step by step (memory view)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_a.gif"
+         data-light="/Map/static/gif/light/memory_a.gif">
+    <figcaption>Program A step by step (memory view) · <a href="/Map/static/video/dark/memory_a.mp4"
+         data-dark="/Map/static/video/dark/memory_a.mp4"
+         data-light="/Map/static/video/light/memory_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_b.gif" alt="Program B step by step (memory view)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_b.gif"
+         data-light="/Map/static/gif/light/memory_b.gif">
+    <figcaption>Program B step by step (memory view) · <a href="/Map/static/video/dark/memory_b.mp4"
+         data-dark="/Map/static/video/dark/memory_b.mp4"
+         data-light="/Map/static/video/light/memory_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> run Programs A and B. They must print 3 and 8.</p>
+                <p><b>Break it:</b> forget to catch the return signal in your Call handler. What happens to the first <code>return</code>?</p>
+                <p><b>What you have now:</b> Your interpreter runs real programs. Program A prints 3.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="errors">
+            <h2>7 · The error museum</h2>
+            <p class="term">Errors</p>
+            <p class="chmeta">~20 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p><code>ex-info</code> maps with <code>:error-type</code> and <code>:line</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Welcome to the error museum. Every exhibit here is a program that went wrong, and every stage has its own way of saying no.</p><p>Every stage can reject a program, and each one raises its own error class. All of them derive from one base class carrying a message and a line:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the error classes</span>
+        <span class="ref">python_interpreter_clojure/main.clj:24–48</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- format-error [type-name message line]
+  (str type-name &#34;: &#34; message (when line (str &#34; [line &#34; line &#34;]&#34;))))
+
+(defn- format-error-colored [type-name message line]
+  (str &#34;\033[91m&#34; type-name &#34;\033[0m: &#34; message (when line (str &#34; [line &#34; line &#34;]&#34;))))
+
+(defn py-error
+  &#34;Build an ex-info representing a Py* error (Lexer/Parse/Runtime).
+   The exception&#39;s message is colorized (red type label), mirroring the
+   original PyError.__str__; ex-data carries the plain fields for callers
+   that want an uncolored rendering (the original&#39;s .plain()).&#34;
+  [type-name message line]
+  (ex-info (format-error-colored type-name message line)
+           {:py-error true
+            :error-type type-name
+            :message message
+            :line line
+            :plain (format-error type-name message line)}))
+
+(defn lexer-error [message line] (py-error &#34;LexerError&#34; message line))
+(defn parse-error [message line] (py-error &#34;ParseError&#34; message line))
+(defn runtime-error [message line] (py-error &#34;PyRuntimeError&#34; message line))
+
+(defn py-error? [e]
+  (and (instance? clojure.lang.ExceptionInfo e) (:py-error (ex-data e))))
+</code></pre>
+</figure>
+
+
+
+
+<div class='tablewrap'><table><tr><th>stage</th><th>error</th><th>raised in main.py</th><th>real message</th></tr><tr><td>lexer</td><td><code>IndentationError</code></td><td><code>Lexer._handle_indentation</code></td><td><code>LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</code></td></tr><tr><td>lexer</td><td><code>SyntaxError</code></td><td><code>Lexer._read_operator</code></td><td><code>LexerError: SyntaxError: unexpected character '$' [line 1]</code></td></tr><tr><td>parser</td><td><code>SyntaxError</code></td><td><code>Parser._expect / Parser._err</code></td><td><code>ParseError: SyntaxError: expected ':' after if-condition [line 2]</code></td></tr><tr><td>semantic</td><td><code>'return' outside function</code></td><td><code>(no pass) → InternalError</code></td><td><code>InternalError: 5</code></td></tr><tr><td>runtime</td><td><code>NameError</code></td><td><code>Environment.get</code></td><td><code>PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (operands)</code></td><td><code>Interpreter._apply_binop</code></td><td><code>PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (arity)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]</code></td></tr><tr><td>runtime</td><td><code>TypeError (not callable)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: 'int' object is not callable [line 2]</code></td></tr><tr><td>runtime</td><td><code>RecursionError</code></td><td><code>host Python stack → main()'s except Exception</code></td><td><code>InternalError: maximum recursion depth exceeded</code></td></tr><tr><td>runtime</td><td><code>ZeroDivisionError</code></td><td><code>Interpreter._apply_binop</code></td><td>cannot happen in MAP: there is no <code>/</code>, <code>//</code> or <code>%</code></td></tr></table></div><p><b>How an error is reported.</b> A runtime error raised deep inside a recursion passes through every call (none of them catches it) until <code>main()</code> catches it and prints <code>Kind: message [line N]</code>:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">main(): the single place that reports errors</span>
+        <span class="ref">python_interpreter_clojure/main.clj:1282–1285, 1324–1343</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn- report-exception [e]
+  (if (py-error? e)
+    (println (.getMessage ^Throwable e))
+    (println (str &#34;\033[91mInternalError\033[0m: &#34; (.getMessage ^Throwable e)))))
+
+(defn -main [&amp; args]
+  (if (empty? args)
+    (repl)
+    (let [show-ast (boolean (some #(= % &#34;--ast&#34;) args))
+          files (remove #(str/starts-with? % &#34;--&#34;) args)]
+      (if (empty? files)
+        (do (println &#34;Usage: bb core.clj [script.ep] [--ast]&#34;)
+            (System/exit 1))
+        (let [filepath (first files)
+              f (java.io.File. ^String filepath)]
+          (if-not (.exists f)
+            (do (println (str &#34;\033[91mFileNotFoundError\033[0m: No such file: &#34; (pr-str filepath)))
+                (System/exit 1))
+            (let [source (slurp filepath)]
+              (try
+                (if show-ast
+                  (run-source-with-ast source)
+                  (run-source source))
+                (catch clojure.lang.ExceptionInfo e (report-exception e) (System/exit 1))
+                (catch Exception e (report-exception e) (System/exit 1))))))))))
+</code></pre>
+</figure>
+
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/rt_name_error_deep.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return m
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">MAP output</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">PyRuntimeError: NameError: name &#39;m&#39; is not defined [line 3]
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p><b>Line and column.</b> Every token stores <code>line</code> and <code>col</code>, but the error reports only the line, and the column is lost. Reporting columns means passing the token's column into the error and printing the source line with a <code>^</code> under it, as CPython does:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">CPython 3.14, last line of the traceback</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">NameError: name &#39;m&#39; is not defined</code></pre>
+</figure>
+
+
+
+
+<p><b>RecursionError.</b> MAP does not count calls. A runaway recursion exhausts the <i>host</i> Python's stack, and <code>main()</code> reports that as <code>InternalError</code>. Java catches <code>StackOverflowError</code>, the llvm port counts calls up to <code>MAX_DEPTH = 4000</code>, and Rust, C++ and Clojure simply crash. A faithful version keeps a depth counter in the call and raises at 1000, as CPython does.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/error_stack.gif" alt="An error travels up the call stack" loading="lazy"
+         data-dark="/Map/static/gif/dark/error_stack.gif"
+         data-light="/Map/static/gif/light/error_stack.gif">
+    <figcaption>An error travels up the call stack · <a href="/Map/static/video/dark/error_stack.mp4"
+         data-dark="/Map/static/video/dark/error_stack.mp4"
+         data-light="/Map/static/video/light/error_stack.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> call a function with the wrong number of arguments and check that the line number is right.</p>
+                <p><b>Break it:</b> remove the base case from <code>fib_rec</code>. Who stops it: your interpreter or the host?</p>
+                <p><b>What you have now:</b> Your interpreter fails politely, with a kind and a line.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="builtins">
+            <h2>8 · Crossing the border: print and range</h2>
+            <p class="term">Builtins</p>
+            <p class="chmeta">~15 min · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p>Plain Clojure functions in a map, recognised with <code>fn?</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Think of power outlets. Your MAP program plugs into them, and the electricity comes from the host language.</p><p>A builtin is a function written in the <b>host language</b> rather than in MAP. MAP needs two of them, <code>print</code> and <code>range</code>. Each interpreter defines 14 and registers all of them the same way: as ordinary values in the global Environment.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">print</span>
+        <span class="ref">python_interpreter_clojure/main.clj:768–770</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn builtin-print [args]
+  (println (str/join &#34; &#34; (map ep-str args)))
+  nil)
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">range — returns an eager list</span>
+        <span class="ref">python_interpreter_clojure/main.clj:780–785</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn builtin-range [args]
+  (when-not (&lt;= 1 (count args) 3) (throw (runtime-error &#34;TypeError: range() takes 1–3 arguments&#34; nil)))
+  (doseq [a args]
+    (when-not (numericish? a) (throw (runtime-error &#34;TypeError: range() arguments must be integers&#34; nil))))
+  (let [iargs (map #(long (-&gt;numval %)) args)]
+    (atom (vec (apply range iargs)))))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the registry</span>
+        <span class="ref">python_interpreter_clojure/main.clj:880–894</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(def builtins
+  {&#34;print&#34; builtin-print
+   &#34;len&#34; builtin-len
+   &#34;range&#34; builtin-range
+   &#34;int&#34; builtin-int
+   &#34;float&#34; builtin-float
+   &#34;str&#34; builtin-str
+   &#34;bool&#34; builtin-bool
+   &#34;input&#34; builtin-input
+   &#34;abs&#34; builtin-abs
+   &#34;max&#34; builtin-max
+   &#34;min&#34; builtin-min
+   &#34;type&#34; builtin-type
+   &#34;append&#34; builtin-append
+   &#34;pop&#34; builtin-pop})
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">seeded into the global scope when the interpreter starts</span>
+        <span class="ref">python_interpreter_clojure/main.clj:1107–1110</span>
+    </figcaption>
+    
+    <pre><code class="language-clojure">(defn new-interpreter []
+  (let [globals (new-env)]
+    (doseq [[nm f] builtins] (env-set! globals nm f))
+    {:globals globals}))
+</code></pre>
+</figure>
+
+
+
+
+<p>When a <code>Call</code> node runs, the callee is looked up like any variable. If the value is a host callable rather than a MAP function, it is called directly with the list of evaluated arguments. That is the point where MAP code crosses into native code. Python Tutor hides builtins in its frames, and so do the videos.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/native.gif" alt="Crossing into native code" loading="lazy"
+         data-dark="/Map/static/gif/dark/native.gif"
+         data-light="/Map/static/gif/light/native.gif">
+    <figcaption>Crossing into native code · <a href="/Map/static/video/dark/native.mp4"
+         data-dark="/Map/static/video/dark/native.mp4"
+         data-light="/Map/static/video/light/native.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add a third builtin, like <code>abs</code> or <code>max</code>.</p>
+                <p><b>Break it:</b> write <code>print = 1</code>, then call <code>print(2)</code>. Which error do you get?</p>
+                <p><b>What you have now:</b> That's the whole pipeline. You have written a Python.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="bytecode">
+            <h2>9 · Bonus: real CPython bytecode</h2>
+            
+            <p class="chmeta">~15 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Clojure</h4>
+                <p>A tree-walker: <code>if</code> and <code>doseq</code> inside each <code>defmethod</code>.</p>
+            </aside>
+            
+
+            
+
+<p>CPython does not walk the tree. It compiles each function into <b>bytecode</b>, a flat list of instructions for a stack machine, and control flow becomes <b>jumps</b>. Below is <code>dis.dis</code> for both functions, run with <b>Python 3.14</b>. Bytecode is an implementation detail: it differs between Python versions, so on 3.12 or 3.13 you will see other instruction names.</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_rec — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP               10 (-)
+              CALL                     1
+              LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           2
+              BINARY_OP               10 (-)
+              CALL                     1
+              BINARY_OP                0 (+)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_iter — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_SMALL_INT           0
+              STORE_FAST               1 (a)
+
+  5           LOAD_SMALL_INT           1
+              STORE_FAST               2 (b)
+
+  6           LOAD_GLOBAL              1 (range + NULL)
+              LOAD_SMALL_INT           2
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP                0 (+)
+              CALL                     2
+              GET_ITER
+      L2:     FOR_ITER                15 (to L3)
+              STORE_FAST               3 (i)
+
+  7           LOAD_FAST_BORROW_LOAD_FAST_BORROW 18 (a, b)
+              BINARY_OP                0 (+)
+              STORE_FAST               4 (temp)
+
+  8           LOAD_FAST                2 (b)
+              STORE_FAST               1 (a)
+
+  9           LOAD_FAST                4 (temp)
+              STORE_FAST               2 (b)
+              JUMP_BACKWARD           17 (to L2)
+
+  6   L3:     END_FOR
+              POP_ITER
+
+ 10           LOAD_FAST_BORROW         2 (b)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<ul><li><code>if n &lt;= 1:</code> becomes <code>COMPARE_OP</code> followed by <code>POP_JUMP_IF_FALSE … (to L1)</code>, which skips the <code>return n</code> when the test is false.</li><li><code>for</code> becomes <code>GET_ITER</code>, then <code>FOR_ITER (to L3)</code> at the top of the loop (it leaves when the iterator is exhausted) and <code>JUMP_BACKWARD (to L2)</code> at the bottom.</li></ul><h3>Tree-walkers use no jumps</h3><p>A tree-walker never needs jumps: an <code>If</code> node is executed by a host <code>if</code>, and a <code>For</code> node by a host <code>for</code>. The structure of the tree <i>is</i> the control flow. Only a compiler needs jumps — like CPython, and like the LLVM port.</p><p>You already saw <code>if</code> and <code>for</code> in the selected interpreter in <a href='#memory'>chapter 6</a>.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/bytecode_b.gif" alt="CPython bytecode for Program B" loading="lazy"
+         data-dark="/Map/static/gif/dark/bytecode_b.gif"
+         data-light="/Map/static/gif/light/bytecode_b.gif">
+    <figcaption>CPython bytecode for Program B · <a href="/Map/static/video/dark/bytecode_b.mp4"
+         data-dark="/Map/static/video/dark/bytecode_b.mp4"
+         data-light="/Map/static/video/light/bytecode_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="out_of_scope">
+            <h2>10 · Expansion packs</h2>
+            <p class="term">Out of scope</p>
+            
+
+            
+
+            
+
+<p>Think of what follows as expansion packs, ready for you to build.</p><p>This tutorial covers the language core only. MAP has <b>no</b> standard library, no <code>import</code> or modules, no classes or objects, and no operating-system APIs (files, sockets, processes, environment). It also leaves out <code>while</code>, <code>try/except</code>, strings, lists, floats and <code>/ // %</code>. Most of these exist in the six full ports and are left out of MAP on purpose. Each one is a new token, a new grammar rule, a new node, and a new evaluation function, built with exactly the same steps as above.</p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="your_turn">
+            <h2>11 · Your turn: build your own Python</h2>
+            
+            
+
+            
+
+            
+
+<p>You have seen every piece. Now build it yourself. Pick a host language: one of the six, or one that is not here yet (Go, C#, Haskell, JavaScript, Zig …). Then go through the tutorial in order, one stage at a time:</p><ol class='checklist'><li><a href='#tokenizer'>Tokenizer</a>: a scanner loop and an indent stack that emits INDENT and DEDENT.</li><li><a href='#parser'>Parser</a>: one recursive-descent function per grammar rule, deciding with one or two tokens of lookahead.</li><li><a href='#ast'>AST</a>: one node type per construct, and a dispatcher that picks the handler for each node.</li><li><a href='#semantic'>Environments</a>: <code>{vars, parent}</code>, with lookup walking up the parent chain.</li><li><a href='#memory'>Calls and return</a>: a new environment per call, and a return signal that unwinds to the call.</li><li><a href='#errors'>Errors</a>: one class per stage, each carrying a line number, reported in one place.</li><li><a href='#builtins'>Builtins</a>: <code>print</code> and <code>range</code> as host functions stored in the global environment.</li></ol><h3>Final check</h3><ul><li>Program A prints <b>3</b> and Program B prints <b>8</b>.</li><li>The programs in <code>tutorial/examples/errors/</code> fail with the messages from chapters 3 and 7.</li></ul><p>Stuck? Switch the <b>Programming language</b> selector at the top: every stage is shown in six real interpreters, so you can compare your code with a working one. When MAP runs, keep going with the features from chapter 10: <code>while</code>, strings, lists, floats. Each one is a new token, a grammar rule, a node and an evaluation function — exactly the steps you already know.</p><p><b>Happy hacking, and welcome to the club of people who have written their own Python.</b></p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+    </div>
+</div>
+
+<section class="recap" id="recap">
+    <h2>The whole path</h2>
+    <figure class="teaser">
+        <video id="recap-video" controls playsinline preload="metadata"
+               aria-label="The full interpreter, chapter by chapter: from source code to output"
+               data-dark="/Map/static/video/dark/InterpreterTutorial.mp4"
+               data-light="/Map/static/video/light/InterpreterTutorial.mp4"></video>
+        <figcaption>The full interpreter, chapter by chapter: from source code to output</figcaption>
+    </figure>
+</section>
+
+    </main>
+
+    <footer>
+        <hr>
+        <p>© 2026 Make a Python</p>
+    </footer>
+</body>
+</html>

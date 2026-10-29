@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/Map/static/img/favicon.ico">
+    <title>Сделай Python</title>
+
+    <!-- Loaded without defer: sets data-theme on <html> before first paint -->
+    <script src="/Map/static/js/base.js"></script>
+    <link rel="stylesheet" href="/Map/static/css/base.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/clojure.min.js"></script>
+</head>
+<body>
+    
+    
+    
+    
+    
+    
+
+    <header>
+
+        <nav class="navbar" aria-label="Site options">
+            <div class="brand">
+                <img class="logo" src="/Map/static/img/logo.png" alt="Make a Python logo">
+                <h1>Сделай Python</h1>
+            </div>
+            <div class="nav-links" id="nav-links">
+                
+                <div class="nav-group">
+                    <label for="lang-select">Язык</label>
+                    <select id="lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/en/java/"
+                                >
+                            English
+                        </option>
+                        
+                        <option value="/Map/es/java/"
+                                >
+                            Español
+                        </option>
+                        
+                        <option value="/Map/ru/java/"
+                                selected>
+                            Русский
+                        </option>
+                        
+                    </select>
+                </div>
+                
+
+                
+                <div class="nav-group">
+                    <label for="prog-lang-select">Язык программирования</label>
+                    <select id="prog-lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/ru/python/"
+                                >
+                            Python
+                        </option>
+                        
+                        <option value="/Map/ru/rust/"
+                                >
+                            Rust
+                        </option>
+                        
+                        <option value="/Map/ru/cpp/"
+                                >
+                            C++
+                        </option>
+                        
+                        <option value="/Map/ru/java/"
+                                selected>
+                            Java
+                        </option>
+                        
+                        <option value="/Map/ru/clojure/"
+                                >
+                            Clojure
+                        </option>
+                        
+                        <option value="/Map/ru/llvm/"
+                                >
+                            LLVM
+                        </option>
+                        
+                    </select>
+                </div>
+                
+            </div>
+
+            <div class="nav-actions">
+                <button id="menu-toggle" class="menu-toggle" type="button"
+                        aria-label="Открыть или закрыть меню" aria-expanded="false" aria-controls="nav-links">☰</button>
+                <button id="theme-toggle" type="button" aria-label="Переключить светлую и тёмную тему">🌙</button>
+            </div>
+        </nav>
+        <hr>
+    </header>
+
+    <main>
+        
+<p class="subtitle">Соберите интерпретатор Python шаг за шагом. Код взят из шести интерпретаторов этого проекта; анимации созданы с помощью manim-slides.</p>
+
+<aside class="invite">
+    <h2>Напишите свой Python</h2>
+    <div class="invite-text"><p>Каждый раз, когда вы набираете <code>python3 script.py</code>, программа читает ваш код и оживляет его. Эта программа — не магия. К концу этой страницы вы напишете такую сами.</p><pre>$ python3 main.py program_a.py
+3</pre><p>Эта тройка будет вашей. Вот рецепт: пройдите главы по порядку на любом языке. Программы A и B и тесты — ваши контрольные точки, а шесть интерпретаторов на этой странице помогут сверяться на каждом шаге.</p></div>
+</aside>
+
+<figure class="teaser">
+    <video id="teaser" autoplay muted loop playsinline controls preload="auto"
+           aria-label="Как выполняется программа на Python: от исходного кода до вывода"
+           data-dark="/Map/static/video/dark/PythonExecutionJourney.mp4"
+           data-light="/Map/static/video/light/PythonExecutionJourney.mp4"></video>
+    <script>
+        (function (v) {
+            v.src = v.getAttribute('data-' + (document.documentElement.getAttribute('data-theme') || 'dark'));
+        })(document.getElementById('teaser'));
+    </script>
+</figure>
+
+<div class="layout">
+    <nav class="toc" aria-label="Главы">
+        <b>Главы</b>
+        <ol>
+            
+            <li><a href="#overview">Обзор: конвейер</a></li>
+            
+            <li><a href="#tokenizer">Чтение: из символов в слова</a></li>
+            
+            <li><a href="#parser">Грамматика: складываются ли слова в предложение?</a></li>
+            
+            <li><a href="#ast">Скелет: ваша программа в виде дерева</a></li>
+            
+            <li><a href="#semantic">Смысл: на что ссылается каждое имя?</a></li>
+            
+            <li><a href="#memory">Оживление: фреймы, вызовы, return</a></li>
+            
+            <li><a href="#errors">Музей ошибок</a></li>
+            
+            <li><a href="#builtins">Через границу: print и range</a></li>
+            
+            <li><a href="#bytecode">Бонус: настоящий байткод CPython</a></li>
+            
+            <li><a href="#out_of_scope">Пакеты расширений</a></li>
+            
+            <li><a href="#your_turn">Ваш ход: напишите свой Python</a></li>
+            
+        </ol>
+        <p class="toc-lang">Код на этой странице показан на <b>Java</b></p>
+    </nav>
+
+    <div class="chapters">
+        
+        <section class="chapter" id="overview">
+            <h2>1 · Обзор: конвейер</h2>
+            
+            <p class="chmeta">~10 мин · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p><code>python_interpreter_java/Main.java</code>: тот же конвейер на records, запечатанном интерфейсе <code>Node</code> и <code>switch</code> с шаблонами.</p>
+            </aside>
+            
+
+            
+
+<p>Интерпретатор — это программа, которая читает другую программу и выполняет её. MAP («Make A Python», «сделай Python») — крошечное подмножество Python: целые числа, булевы значения, <code>None</code>, переменные, <code>+ - &lt; &lt;= ==</code>, <code>if/else</code>, <code>def/return</code>, рекурсия, <code>for … in range(…)</code> и встроенные функции <code>print</code> и <code>range</code>. Несмотря на размер, ему уже нужны все этапы настоящего интерпретатора.</p><ol class='pipeline'><li><b>Исходный код</b>: программа в виде одной строки.</li><li><b>Токенизатор</b>: превращает символы в слова вроде <code>DEF</code>, <code>NAME fib_rec</code> или <code>INDENT</code>.</li><li><b>Парсер</b>: сверяет слова с грамматикой и строит дерево.</li><li><b>AST</b>: дерево объектов-узлов (<code>FuncDef</code>, <code>If</code>, <code>BinOp</code> …).</li><li><b>Семантический анализ</b>: решает, какие имена локальные, а какие глобальные, и отвергает неверные программы, не запуская их.</li><li><b>Вычисление обходом дерева + память</b>: обходит дерево, создавая фреймы и значения.</li><li><b>Вывод</b>: то, что пишет <code>print</code>.</li></ol><p>Настоящий CPython после AST сворачивает в сторону: он компилирует дерево в <b>байткод</b> и выполняет его на виртуальной машине. MAP никогда не создаёт байткод; он обходит дерево напрямую.</p>
+
+
+
+<figure class="diagram">
+    <img class="only-dark" src="/Map/static/img/pipeline-programing_languages_dark.png" alt="Фазы компилятора: лексический, синтаксический и семантический анализ, промежуточный код, оптимизация и генерация кода" loading="lazy">
+    <img class="only-light" src="/Map/static/img/pipeline-programing_languages_light.png" alt="Фазы компилятора: лексический, синтаксический и семантический анализ, промежуточный код, оптимизация и генерация кода" loading="lazy">
+</figure>
+
+
+
+<p>Два сквозных примера проходят через все главы:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Программа A — fib_rec(4)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Программа B — fib_iter(6)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_iter(n):
+    if n &lt;= 1:
+        return n
+    a = 0
+    b = 1
+    for i in range(2, n + 1):
+        temp = a + b
+        a = b
+        b = temp
+    return b
+
+print(fib_iter(6))
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p>Если запустить их эталонным интерпретатором, <code>python3 python_interpreter_in_python/main.py tutorial/examples/program_a.py</code> выведет <b>3</b>, а программа B выведет <b>8</b>.</p><h3>Шесть интерпретаторов, один замысел</h3><p>В проекте один и тот же интерпретатор написан шесть раз. Выберите его в списке <b>Язык программирования</b> вверху: все блоки кода на странице покажут этот интерпретатор. Общее у них всех — конвейер выше; стек отступов, порождающий INDENT и DEDENT; парсер рекурсивного спуска с той же цепочкой приоритетов; около 23 типов узлов, названных как в модуле <code>ast</code> CPython; <code>Environment{vars, parent}</code>; ошибки с номером строки; и те же 14 встроенных функций. Как это выражает каждый язык:</p><details><summary>Сравнить шесть реализаций</summary><div class='tablewrap'><table><tr><th></th><th>Python</th><th>Rust</th><th>C++</th><th>Java</th><th>Clojure</th><th>LLVM</th></tr><tr><td>Тип токена</td><td><code>TT(Enum)</code> + <code>@dataclass Token</code></td><td><code>enum TokKind</code> с данными + <code>Tag</code></td><td><code>enum class TT</code> + размеченное объединение <code>TokenValue</code></td><td><code>enum TT</code> + <code>record Token</code></td><td>keywords + <code>defrecord Token</code></td><td>как в Python, операторы в таблицах</td></tr><tr><td>Парсер</td><td>рекурсивный спуск, просмотр на 1–2 токена</td><td>так же</td><td>так же</td><td>так же</td><td>так же, состояние в atom</td><td>так же</td></tr><tr><td>AST</td><td>подклассы <code>@dataclass</code></td><td><code>enum Expr / enum Stmt</code>, <code>Box</code></td><td>один большой <code>ASTNode</code> + метка <code>NodeType</code></td><td><code>sealed interface Node</code> + records</td><td><code>defrecord</code> на каждый узел</td><td>те же dataclass</td></tr><tr><td>Диспетчеризация</td><td><code>getattr(self, "_eval_"+cls)</code></td><td><code>match</code></td><td><code>switch(node-&gt;type)</code></td><td><code>switch</code> с шаблонами</td><td><code>defmulti</code> по типу</td><td><code>getattr</code> → генерирует IR</td></tr><tr><td>Окружение</td><td>dict + родитель</td><td><code>Rc&lt;Env&gt;</code>, <code>RefCell&lt;HashMap&gt;</code></td><td><code>shared_ptr&lt;Environment&gt;</code></td><td><code>HashMap</code> + родитель</td><td><code>Env{vars: atom, parent}</code></td><td>локальные через <code>alloca</code> + глобальные слоты</td></tr><tr><td>return</td><td><code>raise ReturnSignal</code></td><td><code>Err(Flow::Return(v))</code></td><td><code>throw ReturnException</code></td><td><code>throw ReturnSignal</code></td><td><code>ex-info</code></td><td>нативный <code>ret</code></td></tr><tr><td>Ошибки</td><td>PyError(msg, line)</td><td>enum PyError, строка</td><td>EduPyError, строка</td><td>PyError, строка</td><td>ex-info, строка</td><td>PyError, строка</td></tr><tr><td>Предел рекурсии</td><td>предел хоста → InternalError</td><td>нет</td><td>нет</td><td>StackOverflowError → RecursionError</td><td>нет</td><td><code>MAX_DEPTH = 4000</code></td></tr></table></div><p>Эти шесть — лишь примеры. Тот же дизайн можно перенести на любой другой язык, но каждая реализация будет отличаться: у каждого языка свой способ выражать токены, узлы, диспетчеризацию и ошибки.</p></details>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/pipeline.gif" alt="Конвейер" loading="lazy"
+         data-dark="/Map/static/gif/dark/pipeline.gif"
+         data-light="/Map/static/gif/light/pipeline.gif">
+    <figcaption>Конвейер · <a href="/Map/static/video/dark/pipeline.mp4"
+         data-dark="/Map/static/video/dark/pipeline.mp4"
+         data-light="/Map/static/video/light/pipeline.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="tokenizer">
+            <h2>2 · Чтение: из символов в слова</h2>
+            <p class="term">Токенизатор</p>
+            <p class="chmeta">~30 мин · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p>Стек <code>List&lt;Integer&gt;</code>; <code>record Token(TT type, Object value, int line, int col)</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Представьте, что вы читаете предложение. Прежде чем понять его, вы делите его на слова. Токенизатор делает с программой то же самое.</p><p>Токенизатор (его также называют лексером или сканером) читает исходный код <b>по одному символу</b> и группирует символы в <b>токены</b>. Это сканер, написанный вручную: цикл, который запрашивает следующий токен до конца текста. Каждый вызов смотрит на текущий символ и решает, какой токен с него начинается.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">цикл сканера</span>
+        <span class="ref">python_interpreter_java/Main.java:140–150</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        List&lt;Token&gt; tokenize() {
+            while (pos &lt; source.length()) nextToken();
+            closeAllIndents();
+            if (!tokens.isEmpty()) {
+                TT last = tokens.get(tokens.size() - 1).type();
+                if (last != TT.NEWLINE &amp;&amp; last != TT.DEDENT)
+                    tokens.add(new Token(TT.NEWLINE, &#34;\n&#34;, line, col));
+            }
+            tokens.add(new Token(TT.EOF, null, line, col));
+            return tokens;
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">выбор по текущему символу</span>
+        <span class="ref">python_interpreter_java/Main.java:184–206</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void nextToken() {
+            if (atLineStart &amp;&amp; parenDepth == 0) { handleIndentation(); return; }
+
+            char ch = cur();
+            if (ch == &#39; &#39; || ch == &#39;\t&#39; || ch == &#39;\r&#39;) { advance(); return; }
+            if (ch == &#39;\n&#39;) {
+                int ln = line, cl = col;
+                advance();
+                if (parenDepth == 0) {
+                    tokens.add(new Token(TT.NEWLINE, &#34;\n&#34;, ln, cl));
+                    atLineStart = true;
+                }
+                return;
+            }
+            if (ch == &#39;#&#39;) {
+                while (cur() != &#39;\n&#39; &amp;&amp; cur() != &#39;\0&#39;) advance();
+                return;
+            }
+            if (ch == &#39;&#34;&#39; || ch == &#39;\&#39;&#39;) { readString(); return; }
+            if (Character.isDigit(ch)) { readNumber(); return; }
+            if (Character.isLetter(ch) || ch == &#39;_&#39;) { readName(); return; }
+            readOperator();
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>Токен помнит свой <b>тип</b>, своё <b>значение</b> и <b>откуда он взялся</b> (строку и столбец). Эта позиция потом нужна сообщениям об ошибках.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">токен</span>
+        <span class="ref">python_interpreter_java/Main.java:115–120</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    record Token(TT type, Object value, int line, int col) {
+        @Override
+        public String toString() {
+            return &#34;Token(&#34; + type.name() + &#34;, &#34; + pyRepr(value) + &#34;, &#34; + line + &#34;:&#34; + col + &#34;)&#34;;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+<h3>INDENT и DEDENT</h3><p>Представьте вложенные коробки: каждую открытую коробку нужно закрыть. INDENT открывает коробку, DEDENT закрывает.</p><p>В Python нет фигурных скобок, поэтому блоки задаются начальными пробелами. В начале каждой строки лексер считает пробелы и сравнивает их число с вершиной стека <code>indent_stack</code>, который начинается как <code>[0]</code>:</p><ul><li>пробелов больше, чем на вершине: положить новую ширину в стек и выдать <code>INDENT</code></li><li>пробелов меньше: снимать со стека и выдавать по одному <code>DEDENT</code> на каждый снятый уровень</li><li>после снятия ширина должна совпасть с новой вершиной, иначе <code>IndentationError</code></li><li>пустые строки и строки только с комментарием пропускаются и стек не трогают.</li></ul><p>В конце файла каждый ещё открытый уровень получает DEDENT. Поэтому INDENT и DEDENT всегда уравновешены.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">обработка отступов</span>
+        <span class="ref">python_interpreter_java/Main.java:209–239</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void handleIndentation() {
+            int indent = 0;
+            while (cur() == &#39; &#39; || cur() == &#39;\t&#39;) {
+                indent = cur() == &#39;\t&#39; ? (indent / 8 + 1) * 8 : indent + 1;
+                advance();
+            }
+            if (pos &gt;= source.length()) return;
+
+            char ch = cur();
+            // blank or comment-only line: skip entirely (also handles CRLF)
+            if (ch == &#39;\n&#39; || ch == &#39;\r&#39; || ch == &#39;#&#39;) {
+                if (ch == &#39;#&#39;) while (cur() != &#39;\n&#39; &amp;&amp; cur() != &#39;\0&#39;) advance();
+                if (cur() == &#39;\r&#39;) advance();
+                if (cur() == &#39;\n&#39;) advance();
+                return;
+            }
+
+            atLineStart = false;
+            int current = indentStack.get(indentStack.size() - 1);
+            if (indent &gt; current) {
+                indentStack.add(indent);
+                tokens.add(new Token(TT.INDENT, indent, line, 1));
+            } else if (indent &lt; current) {
+                while (indentStack.size() &gt; 1 &amp;&amp; indentStack.get(indentStack.size() - 1) &gt; indent) {
+                    indentStack.remove(indentStack.size() - 1);
+                    tokens.add(new Token(TT.DEDENT, indent, line, 1));
+                }
+                if (indentStack.get(indentStack.size() - 1) != indent)
+                    throw err(&#34;IndentationError: unindent does not match any outer indentation level&#34;);
+            }
+        }
+</code></pre>
+</figure>
+
+
+
+
+<h3>Программа A в виде токенов</h3><p>44 токена, прямо из <code>Lexer(source).tokenize()</code>:</p><details class='predict'><summary>Сначала угадайте: сколько токенов INDENT и сколько DEDENT в программе A?</summary><p><b>По 2.</b> Один INDENT для тела <code>fib_rec</code> и один для тела <code>if</code>. Оба закрываются, поэтому DEDENT тоже 2.</p></details>
+
+
+
+<details><summary>Показать все 44 токена</summary><div class='tablewrap'><table>
+<tr><th>#</th><th>type</th><th>value</th><th>line:col</th></tr>
+<tr><td>0</td><td><code>DEF</code></td><td><code>'def'</code></td><td>1:1</td></tr>
+<tr><td>1</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>1:5</td></tr>
+<tr><td>2</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>1:12</td></tr>
+<tr><td>3</td><td><code>NAME</code></td><td><code>'n'</code></td><td>1:13</td></tr>
+<tr><td>4</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>1:14</td></tr>
+<tr><td>5</td><td><code>COLON</code></td><td><code>':'</code></td><td>1:15</td></tr>
+<tr><td>6</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>1:16</td></tr>
+<tr><td>7</td><td><code>INDENT</code></td><td><code>4</code></td><td>2:1</td></tr>
+<tr><td>8</td><td><code>IF</code></td><td><code>'if'</code></td><td>2:5</td></tr>
+<tr><td>9</td><td><code>NAME</code></td><td><code>'n'</code></td><td>2:8</td></tr>
+<tr><td>10</td><td><code>LESSEQUAL</code></td><td><code>'&lt;='</code></td><td>2:10</td></tr>
+<tr><td>11</td><td><code>INTEGER</code></td><td><code>1</code></td><td>2:13</td></tr>
+<tr><td>12</td><td><code>COLON</code></td><td><code>':'</code></td><td>2:14</td></tr>
+<tr><td>13</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>2:15</td></tr>
+<tr><td>14</td><td><code>INDENT</code></td><td><code>8</code></td><td>3:1</td></tr>
+<tr><td>15</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>3:9</td></tr>
+<tr><td>16</td><td><code>NAME</code></td><td><code>'n'</code></td><td>3:16</td></tr>
+<tr><td>17</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>3:17</td></tr>
+<tr><td>18</td><td><code>DEDENT</code></td><td><code>4</code></td><td>4:1</td></tr>
+<tr><td>19</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>4:5</td></tr>
+<tr><td>20</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:12</td></tr>
+<tr><td>21</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:19</td></tr>
+<tr><td>22</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:20</td></tr>
+<tr><td>23</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:22</td></tr>
+<tr><td>24</td><td><code>INTEGER</code></td><td><code>1</code></td><td>4:24</td></tr>
+<tr><td>25</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:25</td></tr>
+<tr><td>26</td><td><code>PLUS</code></td><td><code>'+'</code></td><td>4:27</td></tr>
+<tr><td>27</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:29</td></tr>
+<tr><td>28</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:36</td></tr>
+<tr><td>29</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:37</td></tr>
+<tr><td>30</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:39</td></tr>
+<tr><td>31</td><td><code>INTEGER</code></td><td><code>2</code></td><td>4:41</td></tr>
+<tr><td>32</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:42</td></tr>
+<tr><td>33</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>4:43</td></tr>
+<tr><td>34</td><td><code>DEDENT</code></td><td><code>0</code></td><td>6:1</td></tr>
+<tr><td>35</td><td><code>NAME</code></td><td><code>'print'</code></td><td>6:1</td></tr>
+<tr><td>36</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:6</td></tr>
+<tr><td>37</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>6:7</td></tr>
+<tr><td>38</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:14</td></tr>
+<tr><td>39</td><td><code>INTEGER</code></td><td><code>4</code></td><td>6:15</td></tr>
+<tr><td>40</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:16</td></tr>
+<tr><td>41</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:17</td></tr>
+<tr><td>42</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>6:18</td></tr>
+<tr><td>43</td><td><code>EOF</code></td><td><code>None</code></td><td>7:1</td></tr>
+</table></div></details>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tokens_a.gif" alt="Программа A токен за токеном" loading="lazy"
+         data-dark="/Map/static/gif/dark/tokens_a.gif"
+         data-light="/Map/static/gif/light/tokens_a.gif">
+    <figcaption>Программа A токен за токеном · <a href="/Map/static/video/dark/tokens_a.mp4"
+         data-dark="/Map/static/video/dark/tokens_a.mp4"
+         data-light="/Map/static/video/light/tokens_a.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/indent_b.gif" alt="INDENT и DEDENT в программе B" loading="lazy"
+         data-dark="/Map/static/gif/dark/indent_b.gif"
+         data-light="/Map/static/gif/light/indent_b.gif">
+    <figcaption>INDENT и DEDENT в программе B · <a href="/Map/static/video/dark/indent_b.mp4"
+         data-dark="/Map/static/video/dark/indent_b.mp4"
+         data-light="/Map/static/video/light/indent_b.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> добавьте <code>!=</code> в свой токенизатор.</p>
+                <p><b>Сломайте:</b> сделайте отступ одной строки табуляцией, а следующей — пробелами. Что произойдёт?</p>
+                <p><b>Что у вас есть:</b> Ваш интерпретатор умеет читать слова. Предложения он пока не понимает.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="parser">
+            <h2>3 · Грамматика: складываются ли слова в предложение?</h2>
+            <p class="term">Парсер (синтаксический анализ, PEG)</p>
+            <p class="chmeta">~45 мин · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p>Каждое правило возвращает record, например <code>Compare</code>; <code>expect</code> выбрасывает <code>ParseError</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Представьте учителя грамматики, который разбирает предложение: здесь подлежащее, там сказуемое. Парсер делает то же с токенами. Он проверяет, что они подходят под грамматику, и рисует структуру.</p><p>Парсер проверяет, что токены образуют правильную программу, и строит дерево. Грамматика MAP, записанная как <b>PEG</b> (Parsing Expression Grammar, грамматика разбирающих выражений):</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">грамматика MAP (подмножество EBNF-комментария в main.py:656)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext">program     &lt;- stmt* EOF
+stmt        &lt;- func_def / if_stmt / for_stmt / simple_stmt
+simple_stmt &lt;- (return_stmt / assign / expr_stmt) NEWLINE
+assign      &lt;- NAME &#39;=&#39; expr
+func_def    &lt;- &#39;def&#39; NAME &#39;(&#39; params? &#39;)&#39; &#39;:&#39; block
+if_stmt     &lt;- &#39;if&#39; expr &#39;:&#39; block (&#39;else&#39; &#39;:&#39; block)?
+for_stmt    &lt;- &#39;for&#39; NAME &#39;in&#39; expr &#39;:&#39; block
+block       &lt;- NEWLINE INDENT stmt+ DEDENT
+expr        &lt;- comparison
+comparison  &lt;- sum ((&#39;&lt;=&#39; / &#39;&lt;&#39; / &#39;==&#39;) sum)*
+sum         &lt;- primary ((&#39;+&#39; / &#39;-&#39;) primary)*
+primary     &lt;- atom (&#39;(&#39; args? &#39;)&#39;)*
+atom        &lt;- NAME / INT / &#39;True&#39; / &#39;False&#39; / &#39;None&#39; / &#39;(&#39; expr &#39;)&#39;
+</code></pre>
+</figure>
+
+
+
+
+<p>Как её читать: <code>e1 e2</code> — последовательность, <code>e*</code> — «ноль или больше» (цикл while), <code>e?</code> — необязательная часть, а <code>e1 / e2</code> — <b>упорядоченный выбор</b>. Парсер сначала пробует <code>e1</code> и пробует <code>e2</code>, только если <code>e1</code> не подошла. Неоднозначности не бывает: побеждает первая успешная альтернатива.</p><div class='deepdive'><h3>Для любознательных (можно пропустить): Откат (backtracking)</h3><p>Эту часть можно пропустить. Ни один из шести интерпретаторов не делает откат, но здесь объясняется, что значит «PEG».</p><p>Если альтернатива не удалась на полпути, парсер должен <b>вернуться назад</b>. Перед попыткой он запоминает позицию курсора, а при неудаче восстанавливает её:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">упорядоченный выбор вручную (приём из peg.txt)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def parse_simple_stmt(self):
+    save = self.pos
+    node = self.parse_assign()        # NAME &#39;=&#39; expr
+    if node is not None:
+        return node
+    self.pos = save                   # BACKTRACK: undo what assign consumed
+    return self.parse_expr_stmt()</code></pre>
+</figure>
+
+
+
+
+<p>Пример: на <code>print(fib_rec(4))</code> правило <code>assign</code> совпадает с <code>NAME print</code>, затем ждёт <code>'='</code>, но находит <code>'('</code>. Оно не срабатывает, курсор возвращается на 0, и <code>expr_stmt</code> разбирает всю строку.</p><h3>Мемоизация packrat</h3><p>Откат может заставить парсер повторять работу, например в <code>comparison &lt;- sum '&lt;=' sum / sum</code>. Обе альтернативы начинают с разбора <code>sum</code> с одной и той же позиции. Парсер <b>packrat</b> хранит таблицу мемоизации <code>(правило, позиция) → (узел, конечная позиция)</code>, поэтому каждое правило выполняется не больше одного раза на позицию, и разбор остаётся линейным:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">packrat в нескольких строках</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def memo(rule):
+    def wrapper(self):
+        key = (rule.__name__, self.pos)
+        if key in self.memo:
+            node, self.pos = self.memo[key]     # hit: jump straight to the end
+            return node
+        node = rule(self)
+        self.memo[key] = (node, self.pos)
+        return node
+    return wrapper</code></pre>
+</figure>
+
+
+
+
+</div><aside class='history'><h3>Уголок истории · До PEG: LL(1)-парсер CPython</h3><p>Представьте Python 3.8. Вы пишете <code>f() = 1</code>. Парсер смотрит и говорит: всё в порядке! Только следующий этап замечает проблему и жалуется: «can't assign to function call». Почему парсер это пропустил? Из-за того, как он был устроен.</p><p>Почти 30 лет CPython обходился без PEG. До Python 3.8 его парсер генерировался программой <b>pgen</b> из файла <code>Grammar/Grammar</code> и был <b>LL(1)</b>-парсером:</p><ul><li><b>L</b>: читает токены слева направо (<i>Left to right</i>);</li><li><b>L</b>: строит левостороннее выведение (<i>Leftmost</i>): всегда сначала раскрывает самое левое правило, сверху вниз;</li><li><b>(1)</b>: принимает решение, заглядывая ровно на <b>1</b> токен вперёд.</li></ul><p>LL(1)-парсер работает по таблице и никогда не откатывается. Он хранит стек ещё не разобранных правил, а таблица сопоставляет паре <code>(правило на вершине стека, следующий токен)</code> ровно одну продукцию. Если ячейка пуста, программа — SyntaxError.</p><p>У этой мощи есть пределы. Грамматика не может быть леворекурсивной, и каждый выбор должен решаться по одному токену. Поэтому некоторые правила писали слишком широкими и исправляли позже: <code>f() = 1</code> разбиралось как допустимый оператор и отвергалось только при построении AST («can't assign to function call»). Операторы <code>with</code> в скобках и <code>match</code> выразить было вовсе невозможно. <b>PEP 617</b> заменил его PEG-парсером в <b>Python 3.9</b> (старый ещё был доступен через <code>-X oldparser</code>), а в <b>3.10</b> LL(1)-парсер удалили.</p><p>Парсер MAP близок к старому: это написанный вручную рекурсивный спуск, который решает по одному токену, а на <code>NAME '='</code> — по двум (LL(2)). Поэтому ему никогда не нужен откат PEG, описанный выше.</p>
+
+
+
+<div class="videos">
+<figure class="video">
+    <img src="/Map/static/gif/dark/ll1.gif" alt="Табличный LL(1)-разбор id + id" loading="lazy"
+         data-dark="/Map/static/gif/dark/ll1.gif"
+         data-light="/Map/static/gif/light/ll1.gif">
+    <figcaption>Табличный LL(1)-разбор id + id · <a href="/Map/static/video/dark/ll1.mp4"
+         data-dark="/Map/static/video/dark/ll1.mp4"
+         data-light="/Map/static/video/light/ll1.mp4">открыть видео</a></figcaption>
+</figure>
+</div>
+
+
+
+</aside><h3>Что на самом деле делают интерпретаторы</h3><p>Все шесть интерпретаторов называют свой парсер «в стиле PEG», но им <b>никогда не нужно откатываться</b>. Каждый упорядоченный выбор решается <b>заглядыванием</b> на один-два токена вперёд. Это работает, потому что альтернативы MAP начинаются с разных токенов (<code>def</code>, <code>if</code>, <code>for</code>) или различаются по второму токену (<code>NAME '='</code>). Получается то же дерево, построенное без отката и мемоизации.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">операторы: упорядоченный выбор заглядыванием вперёд</span>
+        <span class="ref">python_interpreter_java/Main.java:482–489, 492–511</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Node stmt() {
+            skipNewlines();
+            if (match(TT.DEF)) return funcDef();
+            if (match(TT.IF)) return ifStmt();
+            if (match(TT.WHILE)) return whileStmt();
+            if (match(TT.FOR)) return forStmt();
+            return simpleStmt();
+        }
+
+        private Node simpleStmt() {
+            Node node;
+            if (check(TT.RETURN)) {
+                advance();
+                node = returnStmt();
+            } else if (check(TT.NAME) &amp;&amp; peek(1).type() == TT.EQUAL) {
+                node = assign();
+            } else if (check(TT.NAME) &amp;&amp; (peek(1).type() == TT.PLUSEQUAL || peek(1).type() == TT.MINEQUAL
+                    || peek(1).type() == TT.STAREQUAL || peek(1).type() == TT.SLASHEQUAL)) {
+                node = augAssign();
+            } else {
+                Node e = expr();
+                node = new ExprStmt(e, cur().line());
+            }
+
+            if (check(TT.NEWLINE)) advance();
+            else if (!check(TT.EOF, TT.DEDENT))
+                throw err(&#34;expected newline after statement, got &#34; + pyRepr(cur().type().text));
+            return node;
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>Каждое правило грамматики — это одна функция, которая <b>возвращает узел AST</b>. Приоритет определяется тем, какое правило какое вызывает: <code>comparison</code> вызывает <code>sum</code>, поэтому <code>+</code> связывает сильнее, чем <code>&lt;=</code>.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">comparison и sum строят узлы Compare / BinOp</span>
+        <span class="ref">python_interpreter_java/Main.java:631–639, 641–649</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Node comparison() {
+            Node node = sum();
+            while (check(TT.EQEQUAL, TT.NOTEQUAL, TT.LESS, TT.LESSEQUAL, TT.GREATER, TT.GREATEREQUAL)) {
+                String op = advance().type().text;
+                Node right = sum();
+                node = new Compare(node, op, right, node.line());
+            }
+            return node;
+        }
+
+        private Node sum() {
+            Node node = term();
+            while (check(TT.PLUS, TT.MINUS)) {
+                String op = advance().type().text;
+                Node right = term();
+                node = new BinOp(node, op, right, node.line());
+            }
+            return node;
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">как выбрасывается SyntaxError</span>
+        <span class="ref">python_interpreter_java/Main.java:450–459, 461–461</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Token expect(TT tt, String msg) {
+            if (!check(tt)) {
+                Token got = cur();
+                String desc = msg.isEmpty()
+                        ? &#34;expected &#39;&#34; + tt.text + &#34;&#39;, got &#39;&#34; + got.type().text + &#34;&#39; (&#34; + pyRepr(got.value()) + &#34;)&#34;
+                        : msg;
+                throw new ParseError(&#34;SyntaxError: &#34; + desc, got.line());
+            }
+            return advance();
+        }
+
+        private ParseError err(String msg) { return new ParseError(&#34;SyntaxError: &#34; + msg, cur().line()); }
+</code></pre>
+</figure>
+
+
+
+
+<h3>Неверные программы</h3><p>Каждая программа ниже прошла через настоящие лексер и парсер. Сообщение — ровно то, что печатает <code>main.py</code>, а «останавливается на» — токен, на который смотрел парсер, когда сдался.</p>
+
+
+
+<div class="errgrid">
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_colon.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1
+        return n
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;:&#39; after if-condition [line 2]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;:&#39;</p></details>
+        <p class="where">Останавливается на: строка 2, столбец 14</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_unclosed_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">print(fib_rec(4)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;)&#39; after arguments [line 2]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: &#39;(&#39; was never closed</p></details>
+        <p class="where">Останавливается на: строка 2, столбец 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_def_no_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec n:
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;(&#39; after function name [line 1]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;(&#39;</p></details>
+        <p class="where">Останавливается на: строка 1, столбец 13</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_double_equal.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">a = = 1
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;=&#39; (&#39;=&#39;) [line 1]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Останавливается на: строка 1, столбец 5</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_indent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">if True:
+print(1)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected indented block [line 2]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: IndentationError: expected an indented block after &#39;if&#39; statement on line 1</p></details>
+        <p class="where">Останавливается на: строка 2, столбец 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_dangling_op.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">n = 1 +
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;NEWLINE&#39; (&#39;\n&#39;) [line 1]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Останавливается на: строка 1, столбец 8</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_dedent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+  return fib_rec(n - 1) + fib_rec(n - 2)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: IndentationError: unindent does not match any outer indentation level</p></details>
+        <p class="where">Останавливается на: строка 4</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_char.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">x = 1 $ 2
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: SyntaxError: unexpected character &#39;$&#39; [line 1]</p>
+        <details class="predict"><summary>Угадайте сообщение CPython и нажмите</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Останавливается на: строка 1</p>
+    </div>
+    
+</div>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/backtracking.gif" alt="Упорядоченный выбор и откат" loading="lazy"
+         data-dark="/Map/static/gif/dark/backtracking.gif"
+         data-light="/Map/static/gif/light/backtracking.gif">
+    <figcaption>Упорядоченный выбор и откат · <a href="/Map/static/video/dark/backtracking.mp4"
+         data-dark="/Map/static/video/dark/backtracking.mp4"
+         data-light="/Map/static/video/light/backtracking.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/packrat.gif" alt="Мемоизация packrat" loading="lazy"
+         data-dark="/Map/static/gif/dark/packrat.gif"
+         data-light="/Map/static/gif/light/packrat.gif">
+    <figcaption>Мемоизация packrat · <a href="/Map/static/video/dark/packrat.mp4"
+         data-dark="/Map/static/video/dark/packrat.mp4"
+         data-light="/Map/static/video/light/packrat.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/recursive_descent.gif" alt="Рекурсивный спуск в main.py" loading="lazy"
+         data-dark="/Map/static/gif/dark/recursive_descent.gif"
+         data-light="/Map/static/gif/light/recursive_descent.gif">
+    <figcaption>Рекурсивный спуск в main.py · <a href="/Map/static/video/dark/recursive_descent.mp4"
+         data-dark="/Map/static/video/dark/recursive_descent.mp4"
+         data-light="/Map/static/video/light/recursive_descent.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> добавьте <code>!=</code> рядом с <code>==</code> в правило <code>comparison</code>.</p>
+                <p><b>Сломайте:</b> удалите двоеточие после <code>if</code>. Совпадает ли ваше сообщение с тем, что выше?</p>
+                <p><b>Что у вас есть:</b> Ваш интерпретатор знает, правильно ли построено предложение. Что оно значит, он пока не знает.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="ast">
+            <h2>4 · Скелет: ваша программа в виде дерева</h2>
+            <p class="term">AST и обход дерева</p>
+            <p class="chmeta">~20 мин · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p><code>sealed interface Node</code> + records; <code>switch</code> с шаблонами обязан обработать все случаи.</p>
+            </aside>
+            
+
+            
+
+<p>Возьмите предложение и уберите знаки препинания. Останется скелет: кто что с кем делает. AST — это скелет вашей программы.</p><p><b>Абстрактное синтаксическое дерево</b> (AST) хранит только то, что важно для выполнения программы. В нём нет скобок, двоеточий и отступов: они нужны лишь для того, чтобы придать дереву форму. Каждый узел — небольшой класс:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">базовый класс и корень</span>
+        <span class="ref">python_interpreter_java/Main.java:360–365</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    sealed interface Node {
+        int line();
+    }
+
+    // Root
+    record Program(List&lt;Node&gt; body, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">узлы выражений</span>
+        <span class="ref">python_interpreter_java/Main.java:374–383</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    // Expressions
+    record Name(String id, int line) implements Node {}
+    record ListLiteral(List&lt;Node&gt; elts, int line) implements Node {}
+    record Subscript(Node value, Node index, int line) implements Node {}
+    record BinOp(Node left, String op, Node right, int line) implements Node {}
+    record UnaryOp(String op, Node operand, int line) implements Node {}
+    record Compare(Node left, String op, Node right, int line) implements Node {}
+    record BoolOp(String op, List&lt;Node&gt; values, int line) implements Node {}
+    record Call(Node func, List&lt;Node&gt; args, int line) implements Node {}
+    record MethodCall(Node obj, String method, List&lt;Node&gt; args, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">узлы операторов</span>
+        <span class="ref">python_interpreter_java/Main.java:385–393</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    // Statements
+    record Assign(String target, Node value, int line) implements Node {}
+    record AugAssign(String target, String op, Node value, int line) implements Node {}
+    record ExprStmt(Node expr, int line) implements Node {}
+    record Return(Node value, int line) implements Node {}
+    record If(Node test, List&lt;Node&gt; body, List&lt;Node&gt; orelse, int line) implements Node {}
+    record While(Node test, List&lt;Node&gt; body, int line) implements Node {}
+    record For(String target, Node iter, List&lt;Node&gt; body, int line) implements Node {}
+    record FuncDef(String name, List&lt;String&gt; params, List&lt;Node&gt; body, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+<p><b>Паттерн «Компоновщик» (Composite).</b> Узел может содержать другие узлы (у <code>FuncDef</code> есть <code>body</code>, у <code>BinOp</code> — <code>left</code>/<code>right</code>), и код одинаково обращается с отдельным узлом и целым поддеревом. <code>Name</code> и литералы — это листья.</p><details class='predict'><summary>Прежде чем листать дальше: нарисуйте дерево для <code>fib_rec(n - 1) + fib_rec(n - 2)</code>.</summary><p><code>BinOp '+'</code> с двумя детьми. Каждый ребёнок — <code>Call</code> к <code>Name('fib_rec')</code>, аргумент которого — <code>BinOp '-'</code> из <code>Name('n')</code> и <code>IntLiteral</code>. Найдите его в дереве A ниже.</p></details><h3>Деревья для A и B</h3><p>Вот что печатает <code>python3 main.py --ast</code>:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Программа A</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_rec&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Return
+      BinOp op=&#39;+&#39;
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(2)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_rec&#39;)
+        IntLiteral(4)
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Программа B</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_iter&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Assign target=&#39;a&#39;
+      IntLiteral(0)
+    Assign target=&#39;b&#39;
+      IntLiteral(1)
+    For target=&#39;i&#39;
+      iter:
+        Call
+          Name(&#39;range&#39;)
+          IntLiteral(2)
+          BinOp op=&#39;+&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+      body:
+        Assign target=&#39;temp&#39;
+          BinOp op=&#39;+&#39;
+            Name(&#39;a&#39;)
+            Name(&#39;b&#39;)
+        Assign target=&#39;a&#39;
+          Name(&#39;b&#39;)
+        Assign target=&#39;b&#39;
+          Name(&#39;temp&#39;)
+    Return
+      Name(&#39;b&#39;)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_iter&#39;)
+        IntLiteral(6)
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<h3>Обход дерева: «Посетитель» (Visitor)</h3><p>Чтобы что-то сделать с каждым узлом (напечатать, проверить, выполнить), нужен код для каждого типа узла. <b>Паттерн «Посетитель»</b> выносит этот код из классов узлов: у посетителя есть по функции на каждый тип узла, а диспетчер выбирает нужную:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">диспетчер: выбор обработчика по типу узла</span>
+        <span class="ref">python_interpreter_java/Main.java:1134–1141</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void execStmts(List&lt;Node&gt; stmts, Environment env) {
+            for (Node s : stmts) exec(s, env);
+        }
+
+        private void exec(Node node, Environment env) {
+            switch (node) {
+                case FuncDef n -&gt; env.set(n.name(), new PyFunction(n, env));
+                case Assign n -&gt; env.set(n.target(), eval(n.value(), env));
+</code></pre>
+</figure>
+
+
+
+
+<p>Обработчик узла посещает своих детей, снова вызывая диспетчер, — так получается обход в глубину. Сам вычислитель — это <b>паттерн «Интерпретатор»</b>: у каждой конструкции грамматики есть класс, и вычислить дерево значит попросить каждый узел вычислить себя.</p>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tree_a.gif" alt="Программа A: построение дерева" loading="lazy"
+         data-dark="/Map/static/gif/dark/tree_a.gif"
+         data-light="/Map/static/gif/light/tree_a.gif">
+    <figcaption>Программа A: построение дерева · <a href="/Map/static/video/dark/tree_a.mp4"
+         data-dark="/Map/static/video/dark/tree_a.mp4"
+         data-light="/Map/static/video/light/tree_a.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/walk_a.gif" alt="Программа A: обход в глубину" loading="lazy"
+         data-dark="/Map/static/gif/dark/walk_a.gif"
+         data-light="/Map/static/gif/light/walk_a.gif">
+    <figcaption>Программа A: обход в глубину · <a href="/Map/static/video/dark/walk_a.mp4"
+         data-dark="/Map/static/video/dark/walk_a.mp4"
+         data-light="/Map/static/video/light/walk_a.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> напечатайте своё дерево для программы B и сравните с деревом выше.</p>
+                <p><b>Сломайте:</b> уберите обработчик одного типа узлов. Что сделает диспетчер, встретив такой узел?</p>
+                <p><b>Что у вас есть:</b> Ваша программа — дерево, которое можно обойти. Пока ничего не выполняется.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="semantic">
+            <h2>5 · Смысл: на что ссылается каждое имя?</h2>
+            <p class="term">Семантический анализ</p>
+            <p class="chmeta">~15 мин · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p>Семантического прохода нет; <code>return</code> на верхнем уровне превращается в SyntaxError во время выполнения в <code>Interpreter.run</code>. Особенность Java: <code>None</code> — это <code>null</code>, поэтому при поиске нужен <code>containsKey</code>, а не <code>get</code>.</p>
+            </aside>
+            
+
+            
+
+<details class='predict'><summary>Что напечатает эта программа?<pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></summary><p>Большинство отвечает <b>1</b>. CPython выбрасывает <code>UnboundLocalError</code>, а MAP печатает 1. Эта глава объясняет почему.</p></details><p>Представьте окружение как стикер. На нём несколько имён с их значениями и стрелка на стикер позади. Чтобы найти имя, вы читаете свой стикер, потом тот, что позади, и так далее.</p><p>Программа может быть грамматически правильной и всё равно ошибочной. <b>Семантический анализ</b> — это проход по AST после разбора и до выполнения, который выясняет, что означают имена, и отвергает то, что можно отвергнуть заранее.</p><h3>Разрешение областей видимости: локальное или глобальное?</h3><p>Правило Python: <b>имя, которому где-либо в теле функции присваивается значение, локально для всей функции.</b> Параметры тоже локальны. Любое другое имя ищется в глобальной области, а затем среди встроенных функций. Для программы B:</p><div class='tablewrap'><table><tr><th>область</th><th>имя</th><th>вид</th></tr><tr><td><code>global</code></td><td><code>print</code></td><td>встроенная</td></tr><tr><td><code>global</code></td><td><code>range</code></td><td>встроенная</td></tr><tr><td><code>global</code></td><td><code>fib_iter</code></td><td>глобальная (функция)</td></tr><tr><td><code>fib_iter</code></td><td><code>n</code></td><td>локальная (параметр)</td></tr><tr><td><code>fib_iter</code></td><td><code>a</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>b</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>i</code></td><td>локальная</td></tr><tr><td><code>fib_iter</code></td><td><code>temp</code></td><td>локальная</td></tr></table></div><p>В программе A <code>fib_rec</code> используется внутри собственного тела, но там ей ничего не присваивается, поэтому она <b>глобальная</b>. Так рекурсия находит функцию. Таблица вычислена по настоящему AST функцией <code>capture.scope_table</code>; в самом MAP семантического прохода нет.</p><h3>Ошибки до запуска и во время выполнения</h3><div class='tablewrap'><table><tr><th>программа</th><th>CPython 3.14</th><th>MAP</th></tr><tr><td><pre>return 5</pre></td><td>SyntaxError: 'return' outside function</td><td>InternalError: 5</td></tr><tr><td><pre>def f(n, n):
+    return n
+
+print(f(1, 2))</pre></td><td>SyntaxError: duplicate argument 'n' in function definition</td><td>2</td></tr><tr><td><pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></td><td>UnboundLocalError: cannot access local variable 'x' where it is not associated with a value</td><td>1</td></tr><tr><td><pre>def f():
+    return g()
+
+def g():
+    return 1
+
+print(f())</pre></td><td>1</td><td>1</td></tr></table></div><ul><li><code>'return' outside function</code> и <code>duplicate argument</code> компилятор CPython ловит <b>до запуска какого-либо кода</b>. Ни у одного из шести интерпретаторов нет полного семантического прохода. MAP всё равно выполняет первую программу: сигнал возврата долетает до самого верха и выводится как InternalError. Повторяющийся параметр он молча принимает.</li><li><code>UnboundLocalError</code>: CPython при компиляции решил, что <code>x</code> локальна в <code>f</code> (ей присваивается значение в строке 4), поэтому чтение в строке 3 не удаётся. В MAP такого прохода нет. Поиск в окружении поднимается до глобальной <code>x</code> и печатает 1 — это известное отличие.</li><li><b>NameError нельзя обнаружить заранее.</b> В последней программе <code>f</code> упоминает <code>g</code> раньше, чем <code>g</code> появляется. Когда <code>f()</code> выполняется, <code>g</code> уже определена. Существует ли глобальное имя, зависит от того, что уже выполнилось (определения могут быть условными), поэтому проверка должна происходить во время самого поиска.</li></ul>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Environment: где выбрасывается NameError (во время выполнения)</span>
+        <span class="ref">python_interpreter_java/Main.java:756–778</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final class Environment {
+        final Map&lt;String, Object&gt; vars = new HashMap&lt;&gt;(); // containsKey needed: None is null
+        final Environment parent;
+
+        Environment(Environment parent) { this.parent = parent; }
+
+        Object get(String name, int line) {
+            for (Environment e = this; e != null; e = e.parent)
+                if (e.vars.containsKey(name)) return e.vars.get(name);
+            throw rt(&#34;NameError: name &#39;&#34; + name + &#34;&#39; is not defined&#34;, line);
+        }
+
+        /** Always sets in the current scope. */
+        void set(String name, Object value) { vars.put(name, value); }
+
+        /** Assign to the nearest scope that already owns name; else current scope. */
+        void assign(String name, Object value) {
+            for (Environment e = this; e != null; e = e.parent) {
+                if (e.vars.containsKey(name)) { e.vars.put(name, value); return; }
+            }
+            vars.put(name, value);
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/scope.gif" alt="Разрешение областей видимости" loading="lazy"
+         data-dark="/Map/static/gif/dark/scope.gif"
+         data-light="/Map/static/gif/light/scope.gif">
+    <figcaption>Разрешение областей видимости · <a href="/Map/static/video/dark/scope.mp4"
+         data-dark="/Map/static/video/dark/scope.mp4"
+         data-light="/Map/static/video/light/scope.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> напишите функцию, которая перечисляет локальные имена функции: её параметры и все имена, которым присваивается значение в теле.</p>
+                <p><b>Сломайте:</b> запустите программу с <code>x = 1</code> из начала главы. Ваш интерпретатор печатает 1, как MAP, или падает, как CPython?</p>
+                <p><b>Что у вас есть:</b> Вы знаете, где живёт каждое имя. Дальше мы дадим им значения.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="memory">
+            <h2>6 · Оживление: фреймы, вызовы, return</h2>
+            <p class="term">Вычисление и память</p>
+            <p class="chmeta">~30 мин · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p><code>ReturnSignal</code> — RuntimeException без трассировки стека, поэтому он дешёвый.</p>
+            </aside>
+            
+
+            
+
+<p>Здесь помогут два образа. Стек вызовов — это стопка тарелок: каждый вызов кладёт тарелку сверху, каждый возврат её снимает. <code>return</code> — аварийный выход: он проскакивает все комнаты между вами и дверью.</p><p>Вычислитель обходит AST и делает то, что говорит каждый узел. Во время работы память состоит из двух частей — тех же, что рисует Python Tutor:</p><ul><li><b>Фреймы</b> (слева на видео): по одному <code>Environment</code> на каждый активный вызов, связывающему имена со значениями. Глобальный фрейм создаётся первым.</li><li><b>Объекты</b> (справа): значения, на которые ссылаются переменные, например объекты функций. Небольшие целые показаны прямо в ячейке.</li></ul><h3>Вызов функции</h3><ol><li>Вычислить вызываемую функцию и аргументы.</li><li>Создать <b>новый Environment, родителем которого служит замыкание функции</b> (для функций верхнего уровня в MAP это глобальный фрейм).</li><li>Связать каждый параметр с его аргументом.</li><li>Выполнить тело. <code>return</code> посылает сигнал возврата со значением, который выходит из вложенных блоков <code>if</code>/<code>for</code> к месту вызова.</li><li>Перехватить его, выбросить фрейм и вернуть значение.</li></ol>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">вычисление вызова (Call)</span>
+        <span class="ref">python_interpreter_java/Main.java:1279–1310</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Object evalCall(Call n, Environment env) {
+            Object callee = eval(n.func(), env);
+            List&lt;Object&gt; args = new ArrayList&lt;&gt;();
+            for (Node a : n.args()) args.add(eval(a, env));
+
+            if (callee instanceof Builtin b) {
+                try {
+                    return b.fn().apply(args);
+                } catch (PyRuntimeError e) {
+                    // attach the call-site line to builtin errors that have none
+                    if (e.line == 0) throw new PyRuntimeError(e.msg, n.line());
+                    throw e;
+                }
+            }
+
+            if (callee instanceof PyFunction f) {
+                FuncDef fn = f.node;
+                if (args.size() != fn.params().size())
+                    throw rt(&#34;TypeError: &#34; + fn.name() + &#34;() takes &#34; + fn.params().size()
+                            + &#34; argument(s) but &#34; + args.size() + &#34; given&#34;, n.line());
+                Environment callEnv = new Environment(f.closure);
+                for (int i = 0; i &lt; args.size(); i++) callEnv.set(fn.params().get(i), args.get(i));
+                try {
+                    execStmts(fn.body(), callEnv);
+                } catch (ReturnSignal ret) {
+                    return ret.value;
+                }
+                return null;
+            }
+
+            throw rt(&#34;TypeError: &#39;&#34; + typeName(callee) + &#34;&#39; object is not callable&#34;, n.line());
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">сигнал возврата</span>
+        <span class="ref">python_interpreter_java/Main.java:67–74</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final class ReturnSignal extends RuntimeException {
+        final Object value;
+
+        ReturnSignal(Object value) {
+            super(null, null, false, false); // no stack trace: cheap to throw
+            this.value = value;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">return, if и for</span>
+        <span class="ref">python_interpreter_java/Main.java:1148–1172</span>
+    </figcaption>
+    
+    <pre><code class="language-java">                case Return n -&gt; throw new ReturnSignal(n.value() != null ? eval(n.value(), env) : null);
+                case If n -&gt; {
+                    if (epBool(eval(n.test(), env))) execStmts(n.body(), env);
+                    else if (!n.orelse().isEmpty()) execStmts(n.orelse(), env);
+                }
+                case While n -&gt; {
+                    while (epBool(eval(n.test(), env))) execStmts(n.body(), env);
+                }
+                case For n -&gt; {
+                    Object it = eval(n.iter(), env);
+                    if (it instanceof String s) {
+                        for (String ch : codePoints(s)) {
+                            env.set(n.target(), ch);
+                            execStmts(n.body(), env);
+                        }
+                    } else if (it instanceof List&lt;?&gt;) {
+                        List&lt;Object&gt; lst = asList(it);
+                        for (int i = 0; i &lt; lst.size(); i++) { // live iteration, like Python
+                            env.set(n.target(), lst.get(i));
+                            execStmts(n.body(), env);
+                        }
+                    } else {
+                        throw rt(&#34;TypeError: &#39;&#34; + typeName(it) + &#34;&#39; object is not iterable&#34;, n.line());
+                    }
+                }
+</code></pre>
+</figure>
+
+
+
+
+<details class='predict'><summary>Сначала угадайте: какой глубины достигнет стек для <code>fib_rec(4)</code>? Потом посмотрите видео ниже.</summary><p><b>Стек вызовов</b> — это цепочка активных фреймов. В MAP это не отдельная структура данных: каждый вызов — это вызов в языке-хосте, поэтому его держит собственный стек хоста. Программа A доходит до глубины 4 фрейма (от <code>fib_rec(4)</code> до <code>fib_rec(1)</code>, плюс глобальный).</p></details><p>Видео показывают по одному шагу на каждую выполненную строку; их записывает подкласс <code>Interpreter</code> в <code>capture.py</code>, который только наблюдает, а вычисляет сам main.py. Программа A занимает 39 шагов, программа B — 25. Прямо перед возвратом из <code>fib_iter(6)</code> её фрейм равен <code>{"n": "6", "a": "5", "b": "8", "i": "6", "temp": "8"}</code>, а возвращаемое значение — <b>8</b>.</p><p>В видео следите, как стек растёт, а потом сворачивается обратно до 3.</p>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/environments.gif" alt="Окружения и вызовы" loading="lazy"
+         data-dark="/Map/static/gif/dark/environments.gif"
+         data-light="/Map/static/gif/light/environments.gif">
+    <figcaption>Окружения и вызовы · <a href="/Map/static/video/dark/environments.mp4"
+         data-dark="/Map/static/video/dark/environments.mp4"
+         data-light="/Map/static/video/light/environments.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_a.gif" alt="Программа A по шагам (память)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_a.gif"
+         data-light="/Map/static/gif/light/memory_a.gif">
+    <figcaption>Программа A по шагам (память) · <a href="/Map/static/video/dark/memory_a.mp4"
+         data-dark="/Map/static/video/dark/memory_a.mp4"
+         data-light="/Map/static/video/light/memory_a.mp4">открыть видео</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_b.gif" alt="Программа B по шагам (память)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_b.gif"
+         data-light="/Map/static/gif/light/memory_b.gif">
+    <figcaption>Программа B по шагам (память) · <a href="/Map/static/video/dark/memory_b.mp4"
+         data-dark="/Map/static/video/dark/memory_b.mp4"
+         data-light="/Map/static/video/light/memory_b.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> запустите программы A и B. Они должны напечатать 3 и 8.</p>
+                <p><b>Сломайте:</b> забудьте перехватить сигнал возврата в обработчике Call. Что случится с первым <code>return</code>?</p>
+                <p><b>Что у вас есть:</b> Ваш интерпретатор выполняет настоящие программы. Программа A печатает 3.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="errors">
+            <h2>7 · Музей ошибок</h2>
+            <p class="term">Ошибки</p>
+            <p class="chmeta">~20 мин · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p><code>PyError extends RuntimeException</code> и подклассы. Почему Java выбрасывает RecursionError, а Rust падает? JVM бросает <code>StackOverflowError</code>, и интерпретатор его перехватывает.</p>
+            </aside>
+            
+
+            
+
+<p>Добро пожаловать в музей ошибок. Каждый экспонат — программа, которая пошла не так, и у каждого этапа свой способ сказать «нет».</p><p>Любой этап может отвергнуть программу, и каждый выбрасывает свой класс ошибки. Все они наследуют один базовый класс с сообщением и номером строки:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">классы ошибок</span>
+        <span class="ref">python_interpreter_java/Main.java:24–64</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static class PyError extends RuntimeException {
+        final String msg;
+        final int line;
+
+        PyError(String message, int line) {
+            super(message);
+            this.msg = message;
+            this.line = line;
+        }
+
+        private String loc() {
+            return line &gt; 0 ? &#34; [line &#34; + line + &#34;]&#34; : &#34;&#34;;
+        }
+
+        String plain() {
+            return getClass().getSimpleName() + &#34;: &#34; + msg + loc();
+        }
+
+        @Override
+        public String toString() {
+            return &#34;\033[91m&#34; + getClass().getSimpleName() + &#34;\033[0m: &#34; + msg + loc();
+        }
+    }
+
+    /** Illegal character or unterminated literal. */
+    static class LexerError extends PyError {
+        LexerError(String m, int line) { super(m, line); }
+    }
+
+    /** Token stream violates the grammar. */
+    static class ParseError extends PyError {
+        ParseError(String m, int line) { super(m, line); }
+    }
+
+    /** Type error, undefined name, wrong arity, etc. */
+    static class PyRuntimeError extends PyError {
+        PyRuntimeError(String m, int line) { super(m, line); }
+    }
+
+    static PyRuntimeError rt(String msg) { return new PyRuntimeError(msg, 0); }
+    static PyRuntimeError rt(String msg, int line) { return new PyRuntimeError(msg, line); }
+</code></pre>
+</figure>
+
+
+
+
+<div class='tablewrap'><table><tr><th>этап</th><th>ошибка</th><th>где выбрасывается в main.py</th><th>настоящее сообщение</th></tr><tr><td>лексер</td><td><code>IndentationError</code></td><td><code>Lexer._handle_indentation</code></td><td><code>LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</code></td></tr><tr><td>лексер</td><td><code>SyntaxError</code></td><td><code>Lexer._read_operator</code></td><td><code>LexerError: SyntaxError: unexpected character '$' [line 1]</code></td></tr><tr><td>парсер</td><td><code>SyntaxError</code></td><td><code>Parser._expect / Parser._err</code></td><td><code>ParseError: SyntaxError: expected ':' after if-condition [line 2]</code></td></tr><tr><td>семантика</td><td><code>'return' outside function</code></td><td><code>(нет прохода) → InternalError</code></td><td><code>InternalError: 5</code></td></tr><tr><td>выполнение</td><td><code>NameError</code></td><td><code>Environment.get</code></td><td><code>PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (операнды)</code></td><td><code>Interpreter._apply_binop</code></td><td><code>PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (число аргументов)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]</code></td></tr><tr><td>выполнение</td><td><code>TypeError (не вызываемый)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: 'int' object is not callable [line 2]</code></td></tr><tr><td>выполнение</td><td><code>RecursionError</code></td><td><code>стек Python-хоста → except Exception в main()</code></td><td><code>InternalError: maximum recursion depth exceeded</code></td></tr><tr><td>выполнение</td><td><code>ZeroDivisionError</code></td><td><code>Interpreter._apply_binop</code></td><td>в MAP невозможна: нет <code>/</code>, <code>//</code> и <code>%</code></td></tr></table></div><p><b>Как сообщается об ошибке.</b> Ошибка выполнения, выброшенная глубоко в рекурсии, проходит через все вызовы (ни один её не перехватывает), пока её не перехватит <code>main()</code> и не напечатает <code>Вид: сообщение [line N]</code>:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">main(): единственное место, где сообщается об ошибках</span>
+        <span class="ref">python_interpreter_java/Main.java:1637–1671</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static int realMain(String[] args) {
+        try {
+            if (args.length == 0) {
+                repl();
+                return 0;
+            }
+
+            boolean showAst = Arrays.asList(args).contains(&#34;--ast&#34;);
+            List&lt;String&gt; files = new ArrayList&lt;&gt;();
+            for (String a : args) if (!a.startsWith(&#34;--&#34;)) files.add(a);
+
+            if (files.isEmpty()) {
+                System.out.println(&#34;Usage: java Py.java [script] [--ast]&#34;);
+                return 1;
+            }
+
+            String filepath = files.get(0);
+            Path path = Path.of(filepath);
+            if (!Files.exists(path)) {
+                System.out.println(&#34;\033[91mFileNotFoundError\033[0m: No such file: &#34; + pyRepr(filepath));
+                return 1;
+            }
+
+            String source = Files.readString(path, StandardCharsets.UTF_8);
+            if (showAst) runSourceWithAst(source);
+            else runSource(source, null);
+            return 0;
+        } catch (PyError e) {
+            System.out.println(e);
+            return 1;
+        } catch (Exception e) {
+            System.out.println(&#34;\033[91mInternalError\033[0m: &#34; + e);
+            return 1;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/rt_name_error_deep.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return m
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">вывод MAP</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">PyRuntimeError: NameError: name &#39;m&#39; is not defined [line 3]
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p><b>Строка и столбец.</b> Каждый токен хранит <code>line</code> и <code>col</code>, но ошибка сообщает только строку, а столбец теряется. Чтобы сообщать столбец, нужно передать столбец токена в ошибку и напечатать строку исходника с <code>^</code> под ней, как делает CPython:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">CPython 3.14, последняя строка трассировки</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">NameError: name &#39;m&#39; is not defined</code></pre>
+</figure>
+
+
+
+
+<p><b>RecursionError.</b> MAP не считает вызовы. Бесконечная рекурсия исчерпывает стек Python-<i>хоста</i>, и <code>main()</code> сообщает об этом как об <code>InternalError</code>. Java перехватывает <code>StackOverflowError</code>, версия llvm считает вызовы до <code>MAX_DEPTH = 4000</code>, а Rust, C++ и Clojure просто падают. Точная версия держит счётчик глубины в вызове и выбрасывает ошибку на 1000, как CPython.</p>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/error_stack.gif" alt="Ошибка поднимается по стеку вызовов" loading="lazy"
+         data-dark="/Map/static/gif/dark/error_stack.gif"
+         data-light="/Map/static/gif/light/error_stack.gif">
+    <figcaption>Ошибка поднимается по стеку вызовов · <a href="/Map/static/video/dark/error_stack.mp4"
+         data-dark="/Map/static/video/dark/error_stack.mp4"
+         data-light="/Map/static/video/light/error_stack.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> вызовите функцию с неверным числом аргументов и проверьте, что номер строки правильный.</p>
+                <p><b>Сломайте:</b> уберите базовый случай из <code>fib_rec</code>. Кто его остановит: ваш интерпретатор или хост?</p>
+                <p><b>Что у вас есть:</b> Ваш интерпретатор падает вежливо: с видом ошибки и номером строки.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="builtins">
+            <h2>8 · Через границу: print и range</h2>
+            <p class="term">Встроенные функции</p>
+            <p class="chmeta">~15 мин · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p><code>reg(имя, лямбда)</code> в <code>LinkedHashMap</code>; этот range проверяет шаг 0.</p>
+            </aside>
+            
+
+            
+
+<p>Представьте розетки. Программа на MAP включается в них, а ток идёт из языка-хоста.</p><p>Встроенная функция (builtin) написана на <b>языке-хосте</b>, а не на MAP. MAP нужны две: <code>print</code> и <code>range</code>. Каждый интерпретатор определяет 14 и регистрирует их одинаково — как обычные значения в глобальном Environment.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">print</span>
+        <span class="ref">python_interpreter_java/Main.java:970–975</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        reg(&#34;print&#34;, a -&gt; {
+            StringJoiner sj = new StringJoiner(&#34; &#34;);
+            for (Object x : a) sj.add(epStr(x));
+            System.out.println(sj);
+            return null;
+        });
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">range — сразу возвращает готовый список</span>
+        <span class="ref">python_interpreter_java/Main.java:985–1000</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        reg(&#34;range&#34;, a -&gt; {
+            if (a.isEmpty() || a.size() &gt; 3) throw rt(&#34;TypeError: range() takes 1-3 arguments&#34;);
+            long[] n = new long[a.size()];
+            for (int i = 0; i &lt; n.length; i++) {
+                if (!isNum(a.get(i))) throw rt(&#34;TypeError: range() arguments must be integers&#34;);
+                n[i] = toLong(a.get(i));
+            }
+            long start = 0, stop, step = 1;
+            if (n.length == 1) stop = n[0];
+            else { start = n[0]; stop = n[1]; if (n.length == 3) step = n[2]; }
+            if (step == 0) throw rt(&#34;ValueError: range() arg 3 must not be zero&#34;);
+            List&lt;Object&gt; out = new ArrayList&lt;&gt;();
+            if (step &gt; 0) for (long i = start; i &lt; stop; i += step) out.add(i);
+            else for (long i = start; i &gt; stop; i += step) out.add(i);
+            return out;
+        });
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">реестр</span>
+        <span class="ref">python_interpreter_java/Main.java:961–963</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final Map&lt;String, Builtin&gt; BUILTINS = new LinkedHashMap&lt;&gt;();
+
+    static void reg(String name, Fn fn) { BUILTINS.put(name, new Builtin(name, fn)); }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">заносятся в глобальную область при запуске интерпретатора</span>
+        <span class="ref">python_interpreter_java/Main.java:1113–1115</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        Interpreter() {
+            for (Map.Entry&lt;String, Builtin&gt; e : BUILTINS.entrySet()) globals.set(e.getKey(), e.getValue());
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>Когда выполняется узел <code>Call</code>, вызываемая функция ищется как любая переменная. Если значение — вызываемый объект хоста, а не функция MAP, он вызывается напрямую со списком вычисленных аргументов. Именно здесь код MAP переходит в нативный код. Python Tutor скрывает встроенные функции во фреймах, и видео тоже.</p>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/native.gif" alt="Переход в нативный код" loading="lazy"
+         data-dark="/Map/static/gif/dark/native.gif"
+         data-light="/Map/static/gif/light/native.gif">
+    <figcaption>Переход в нативный код · <a href="/Map/static/video/dark/native.mp4"
+         data-dark="/Map/static/video/dark/native.mp4"
+         data-light="/Map/static/video/light/native.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Попробуйте:</b> добавьте третью встроенную функцию, например <code>abs</code> или <code>max</code>.</p>
+                <p><b>Сломайте:</b> напишите <code>print = 1</code>, а затем вызовите <code>print(2)</code>. Какую ошибку вы получите?</p>
+                <p><b>Что у вас есть:</b> Это весь конвейер. Вы написали Python.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="bytecode">
+            <h2>9 · Бонус: настоящий байткод CPython</h2>
+            
+            <p class="chmeta">~15 мин · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Язык под лупой: Java</h4>
+                <p>Обход дерева: <code>if</code> и <code>for</code> — операторы Java внутри <code>switch</code> с шаблонами.</p>
+            </aside>
+            
+
+            
+
+<p>CPython не обходит дерево. Он компилирует каждую функцию в <b>байткод</b> — плоский список инструкций для стековой машины, — и управление потоком превращается в <b>переходы</b>. Ниже — <code>dis.dis</code> для обеих функций, запущенный в <b>Python 3.14</b>. Байткод — деталь реализации: он отличается между версиями Python, поэтому в 3.12 или 3.13 вы увидите другие имена инструкций.</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_rec — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP               10 (-)
+              CALL                     1
+              LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           2
+              BINARY_OP               10 (-)
+              CALL                     1
+              BINARY_OP                0 (+)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_iter — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_SMALL_INT           0
+              STORE_FAST               1 (a)
+
+  5           LOAD_SMALL_INT           1
+              STORE_FAST               2 (b)
+
+  6           LOAD_GLOBAL              1 (range + NULL)
+              LOAD_SMALL_INT           2
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP                0 (+)
+              CALL                     2
+              GET_ITER
+      L2:     FOR_ITER                15 (to L3)
+              STORE_FAST               3 (i)
+
+  7           LOAD_FAST_BORROW_LOAD_FAST_BORROW 18 (a, b)
+              BINARY_OP                0 (+)
+              STORE_FAST               4 (temp)
+
+  8           LOAD_FAST                2 (b)
+              STORE_FAST               1 (a)
+
+  9           LOAD_FAST                4 (temp)
+              STORE_FAST               2 (b)
+              JUMP_BACKWARD           17 (to L2)
+
+  6   L3:     END_FOR
+              POP_ITER
+
+ 10           LOAD_FAST_BORROW         2 (b)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<ul><li><code>if n &lt;= 1:</code> превращается в <code>COMPARE_OP</code>, за которым следует <code>POP_JUMP_IF_FALSE … (to L1)</code>; он пропускает <code>return n</code>, когда условие ложно.</li><li><code>for</code> превращается в <code>GET_ITER</code>, затем <code>FOR_ITER (to L3)</code> в начале цикла (выход, когда итератор исчерпан) и <code>JUMP_BACKWARD (to L2)</code> в конце.</li></ul><h3>Интерпретаторы обхода дерева обходятся без переходов</h3><p>Интерпретатору, который обходит дерево, переходы не нужны: узел <code>If</code> выполняется <code>if</code> хоста, а узел <code>For</code> — <code>for</code> хоста. Структура дерева <i>и есть</i> управление потоком. Переходы нужны только компилятору — как в CPython и в версии на LLVM.</p><p><code>if</code> и <code>for</code> в выбранном интерпретаторе вы уже видели в <a href='#memory'>главе 6</a>.</p>
+
+
+
+            
+            <h3>Анимация</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/bytecode_b.gif" alt="Байткод CPython для программы B" loading="lazy"
+         data-dark="/Map/static/gif/dark/bytecode_b.gif"
+         data-light="/Map/static/gif/light/bytecode_b.gif">
+    <figcaption>Байткод CPython для программы B · <a href="/Map/static/video/dark/bytecode_b.mp4"
+         data-dark="/Map/static/video/dark/bytecode_b.mp4"
+         data-light="/Map/static/video/light/bytecode_b.mp4">открыть видео</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="out_of_scope">
+            <h2>10 · Пакеты расширений</h2>
+            <p class="term">За рамками</p>
+            
+
+            
+
+            
+
+<p>Считайте всё, что ниже, пакетами расширений, которые ждут, когда вы их соберёте.</p><p>Это руководство охватывает только ядро языка. В MAP <b>нет</b> стандартной библиотеки, нет <code>import</code> и модулей, нет классов и объектов, нет API операционной системы (файлов, сокетов, процессов, переменных окружения). В нём также нет <code>while</code>, <code>try/except</code>, строк, списков, чисел с плавающей точкой и <code>/ // %</code>. Большинство из этого есть в шести полных версиях и намеренно оставлено вне MAP. Каждая такая возможность — это новый токен, новое правило грамматики, новый узел и новая функция вычисления, построенные ровно теми же шагами, что и выше.</p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="your_turn">
+            <h2>11 · Ваш ход: напишите свой Python</h2>
+            
+            
+
+            
+
+            
+
+<p>Вы увидели все части. Теперь соберите их сами. Выберите язык-хост: один из шести или тот, которого здесь ещё нет (Go, C#, Haskell, JavaScript, Zig …). Затем пройдите руководство по порядку, по одному этапу за раз:</p><ol class='checklist'><li><a href='#tokenizer'>Токенизатор</a>: цикл сканера и стек отступов, выдающий INDENT и DEDENT.</li><li><a href='#parser'>Парсер</a>: по одной функции рекурсивного спуска на правило грамматики, решение по одному-двум токенам вперёд.</li><li><a href='#ast'>AST</a>: по типу узла на каждую конструкцию и диспетчер, выбирающий обработчик для узла.</li><li><a href='#semantic'>Окружения</a>: <code>{vars, parent}</code>, поиск поднимается по цепочке родителей.</li><li><a href='#memory'>Вызовы и return</a>: новое окружение на каждый вызов и сигнал возврата, который раскручивается до места вызова.</li><li><a href='#errors'>Ошибки</a>: по классу на этап, у каждого номер строки, сообщение — в одном месте.</li><li><a href='#builtins'>Встроенные функции</a>: <code>print</code> и <code>range</code> как функции хоста в глобальном окружении.</li></ol><h3>Финальная проверка</h3><ul><li>Программа A печатает <b>3</b>, а программа B — <b>8</b>.</li><li>Программы из <code>tutorial/examples/errors/</code> падают с сообщениями из глав 3 и 7.</li></ul><p>Застряли? Переключите список <b>Язык программирования</b> вверху: каждый этап показан в шести настоящих интерпретаторах, так что свой код можно сравнить с работающим. Когда MAP заработает, продолжайте с возможностями из главы 10: <code>while</code>, строки, списки, числа с плавающей точкой. Каждая из них — новый токен, правило грамматики, узел и функция вычисления, то есть ровно те шаги, которые вы уже знаете.</p><p><b>Удачи — и добро пожаловать в клуб тех, кто написал свой Python.</b></p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+    </div>
+</div>
+
+<section class="recap" id="recap">
+    <h2>Весь путь</h2>
+    <figure class="teaser">
+        <video id="recap-video" controls playsinline preload="metadata"
+               aria-label="Весь интерпретатор, глава за главой: от исходного кода до вывода"
+               data-dark="/Map/static/video/dark/InterpreterTutorial.mp4"
+               data-light="/Map/static/video/light/InterpreterTutorial.mp4"></video>
+        <figcaption>Весь интерпретатор, глава за главой: от исходного кода до вывода</figcaption>
+    </figure>
+</section>
+
+    </main>
+
+    <footer>
+        <hr>
+        <p>© 2026 Сделай Python</p>
+    </footer>
+</body>
+</html>

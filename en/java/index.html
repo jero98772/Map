@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/Map/static/img/favicon.ico">
+    <title>Make a Python</title>
+
+    <!-- Loaded without defer: sets data-theme on <html> before first paint -->
+    <script src="/Map/static/js/base.js"></script>
+    <link rel="stylesheet" href="/Map/static/css/base.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/clojure.min.js"></script>
+</head>
+<body>
+    
+    
+    
+    
+    
+    
+
+    <header>
+
+        <nav class="navbar" aria-label="Site options">
+            <div class="brand">
+                <img class="logo" src="/Map/static/img/logo.png" alt="Make a Python logo">
+                <h1>Make a Python</h1>
+            </div>
+            <div class="nav-links" id="nav-links">
+                
+                <div class="nav-group">
+                    <label for="lang-select">Language</label>
+                    <select id="lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/en/java/"
+                                selected>
+                            English
+                        </option>
+                        
+                        <option value="/Map/es/java/"
+                                >
+                            Español
+                        </option>
+                        
+                        <option value="/Map/ru/java/"
+                                >
+                            Русский
+                        </option>
+                        
+                    </select>
+                </div>
+                
+
+                
+                <div class="nav-group">
+                    <label for="prog-lang-select">Programming language</label>
+                    <select id="prog-lang-select" onchange="location.href=this.value">
+                        
+                        <option value="/Map/en/python/"
+                                >
+                            Python
+                        </option>
+                        
+                        <option value="/Map/en/rust/"
+                                >
+                            Rust
+                        </option>
+                        
+                        <option value="/Map/en/cpp/"
+                                >
+                            C++
+                        </option>
+                        
+                        <option value="/Map/en/java/"
+                                selected>
+                            Java
+                        </option>
+                        
+                        <option value="/Map/en/clojure/"
+                                >
+                            Clojure
+                        </option>
+                        
+                        <option value="/Map/en/llvm/"
+                                >
+                            LLVM
+                        </option>
+                        
+                    </select>
+                </div>
+                
+            </div>
+
+            <div class="nav-actions">
+                <button id="menu-toggle" class="menu-toggle" type="button"
+                        aria-label="Toggle menu" aria-expanded="false" aria-controls="nav-links">☰</button>
+                <button id="theme-toggle" type="button" aria-label="Toggle light and dark mode">🌙</button>
+            </div>
+        </nav>
+        <hr>
+    </header>
+
+    <main>
+        
+<p class="subtitle">Build a Python interpreter stage by stage. The code comes from the six interpreters in this project; the animations were rendered with manim-slides.</p>
+
+<aside class="invite">
+    <h2>Build your own Python</h2>
+    <div class="invite-text"><p>Every time you type <code>python3 script.py</code>, a program reads your code and brings it to life. That program isn't magic. By the end of this page, you'll have written one yourself.</p><pre>$ python3 main.py program_a.py
+3</pre><p>That 3 will be yours. Here's the recipe: follow the chapters in order, in any language you like. Programs A and B and the tests are your checkpoints, and the six interpreters on this page are there to compare with at every step.</p></div>
+</aside>
+
+<figure class="teaser">
+    <video id="teaser" autoplay muted loop playsinline controls preload="auto"
+           aria-label="How a Python program runs, from source to output"
+           data-dark="/Map/static/video/dark/PythonExecutionJourney.mp4"
+           data-light="/Map/static/video/light/PythonExecutionJourney.mp4"></video>
+    <script>
+        (function (v) {
+            v.src = v.getAttribute('data-' + (document.documentElement.getAttribute('data-theme') || 'dark'));
+        })(document.getElementById('teaser'));
+    </script>
+</figure>
+
+<div class="layout">
+    <nav class="toc" aria-label="Chapters">
+        <b>Chapters</b>
+        <ol>
+            
+            <li><a href="#overview">Overview: the pipeline</a></li>
+            
+            <li><a href="#tokenizer">Reading: turning characters into words</a></li>
+            
+            <li><a href="#parser">Grammar: do the words form a sentence?</a></li>
+            
+            <li><a href="#ast">The skeleton: your program as a tree</a></li>
+            
+            <li><a href="#semantic">Meaning: what does each name refer to?</a></li>
+            
+            <li><a href="#memory">Bringing it to life: frames, calls, return</a></li>
+            
+            <li><a href="#errors">The error museum</a></li>
+            
+            <li><a href="#builtins">Crossing the border: print and range</a></li>
+            
+            <li><a href="#bytecode">Bonus: real CPython bytecode</a></li>
+            
+            <li><a href="#out_of_scope">Expansion packs</a></li>
+            
+            <li><a href="#your_turn">Your turn: build your own Python</a></li>
+            
+        </ol>
+        <p class="toc-lang">The code on this page is shown in <b>Java</b></p>
+    </nav>
+
+    <div class="chapters">
+        
+        <section class="chapter" id="overview">
+            <h2>1 · Overview: the pipeline</h2>
+            
+            <p class="chmeta">~10 min · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>python_interpreter_java/Main.java</code>: the same pipeline with records, a sealed <code>Node</code> interface and pattern-matching <code>switch</code>.</p>
+            </aside>
+            
+
+            
+
+<p>An interpreter is a program that reads another program and runs it. MAP ("Make A Python") is a tiny subset of Python, with integers, booleans, <code>None</code>, variables, <code>+ - &lt; &lt;= ==</code>, <code>if/else</code>, <code>def/return</code>, recursion, <code>for … in range(…)</code>, and the builtins <code>print</code> and <code>range</code>. Small as it is, it already needs every stage of a real interpreter.</p><ol class='pipeline'><li><b>Source</b>: the program as one string.</li><li><b>Tokenizer</b>: turns characters into words like <code>DEF</code>, <code>NAME fib_rec</code> or <code>INDENT</code>.</li><li><b>Parser</b>: checks the words against the grammar and builds a tree.</li><li><b>AST</b>: the tree of node objects (<code>FuncDef</code>, <code>If</code>, <code>BinOp</code> …).</li><li><b>Semantic analysis</b>: decides which names are local or global, and rejects programs that are wrong without running them.</li><li><b>Tree-walk evaluation + memory</b>: visits the tree, creating frames and values.</li><li><b>Output</b>: what <code>print</code> writes.</li></ol><p>Real CPython takes a side road after the AST: it compiles the tree to <b>bytecode</b> and runs that on a virtual machine. MAP never makes bytecode; it walks the tree directly.</p>
+
+
+
+<figure class="diagram">
+    <img class="only-dark" src="/Map/static/img/pipeline-programing_languages_dark.png" alt="The phases of a compiler: lexical, syntax and semantic analysis, intermediate code, optimization and code generation" loading="lazy">
+    <img class="only-light" src="/Map/static/img/pipeline-programing_languages_light.png" alt="The phases of a compiler: lexical, syntax and semantic analysis, intermediate code, optimization and code generation" loading="lazy">
+</figure>
+
+
+
+<p>Two running examples are followed through every chapter:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program A — fib_rec(4)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program B — fib_iter(6)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_iter(n):
+    if n &lt;= 1:
+        return n
+    a = 0
+    b = 1
+    for i in range(2, n + 1):
+        temp = a + b
+        a = b
+        b = temp
+    return b
+
+print(fib_iter(6))
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p>Running them with the reference interpreter: <code>python3 python_interpreter_in_python/main.py tutorial/examples/program_a.py</code> prints <b>3</b>, and program B prints <b>8</b>.</p><h3>Six interpreters, one design</h3><p>The project contains the same interpreter written six times. Pick one with the <b>Programming language</b> selector at the top: every code block on this page then shows that interpreter. What they all share is the pipeline above; an indent stack that produces INDENT and DEDENT; a recursive-descent parser with the same precedence chain; roughly 23 node types named after CPython's <code>ast</code> module; an <code>Environment{vars, parent}</code>; errors carrying a line number; and the same 14 builtins. How each language expresses them:</p><details><summary>Compare the six implementations</summary><div class='tablewrap'><table><tr><th></th><th>Python</th><th>Rust</th><th>C++</th><th>Java</th><th>Clojure</th><th>LLVM</th></tr><tr><td>Token type</td><td><code>TT(Enum)</code> + <code>@dataclass Token</code></td><td><code>enum TokKind</code> with payload + <code>Tag</code></td><td><code>enum class TT</code> + tagged union <code>TokenValue</code></td><td><code>enum TT</code> + <code>record Token</code></td><td>keywords + <code>defrecord Token</code></td><td>same as Python, table-driven operators</td></tr><tr><td>Parser</td><td>recursive descent, 1–2 token lookahead</td><td>same</td><td>same</td><td>same</td><td>same, state in an atom</td><td>same</td></tr><tr><td>AST</td><td><code>@dataclass</code> subclasses</td><td><code>enum Expr / enum Stmt</code>, <code>Box</code></td><td>one fat <code>ASTNode</code> + <code>NodeType</code> tag</td><td><code>sealed interface Node</code> + records</td><td><code>defrecord</code> per node</td><td>same dataclasses</td></tr><tr><td>Dispatch</td><td><code>getattr(self, "_eval_"+cls)</code></td><td><code>match</code></td><td><code>switch(node-&gt;type)</code></td><td>pattern <code>switch</code></td><td><code>defmulti</code> on type</td><td><code>getattr</code> → emits IR</td></tr><tr><td>Environment</td><td>dict + parent</td><td><code>Rc&lt;Env&gt;</code>, <code>RefCell&lt;HashMap&gt;</code></td><td><code>shared_ptr&lt;Environment&gt;</code></td><td><code>HashMap</code> + parent</td><td><code>Env{vars: atom, parent}</code></td><td><code>alloca</code> locals + global slots</td></tr><tr><td>return</td><td><code>raise ReturnSignal</code></td><td><code>Err(Flow::Return(v))</code></td><td><code>throw ReturnException</code></td><td><code>throw ReturnSignal</code></td><td><code>ex-info</code></td><td>native <code>ret</code></td></tr><tr><td>Errors</td><td>PyError(msg, line)</td><td>PyError enum, line</td><td>EduPyError, line</td><td>PyError, line</td><td>ex-info, line</td><td>PyError, line</td></tr><tr><td>Recursion limit</td><td>host limit → InternalError</td><td>none</td><td>none</td><td>StackOverflowError → RecursionError</td><td>none</td><td><code>MAX_DEPTH = 4000</code></td></tr></table></div><p>These six are only examples. The same design can be ported to any other language, but each implementation will differ: every language has its own way to express tokens, nodes, dispatch and errors.</p></details>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/pipeline.gif" alt="The pipeline" loading="lazy"
+         data-dark="/Map/static/gif/dark/pipeline.gif"
+         data-light="/Map/static/gif/light/pipeline.gif">
+    <figcaption>The pipeline · <a href="/Map/static/video/dark/pipeline.mp4"
+         data-dark="/Map/static/video/dark/pipeline.mp4"
+         data-light="/Map/static/video/light/pipeline.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="tokenizer">
+            <h2>2 · Reading: turning characters into words</h2>
+            <p class="term">Tokenizer</p>
+            <p class="chmeta">~30 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>List&lt;Integer&gt;</code> stack; <code>record Token(TT type, Object value, int line, int col)</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Think of reading a sentence. Before you can understand it, you split it into words. The tokenizer does exactly that for your program.</p><p>The tokenizer (also called lexer or scanner) reads the source <b>one character at a time</b> and groups characters into <b>tokens</b>. The method is a hand-written scanner: a loop that asks for the next token until the end of the text. Each call looks at the current character and decides what kind of token starts there.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the scanner loop</span>
+        <span class="ref">python_interpreter_java/Main.java:140–150</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        List&lt;Token&gt; tokenize() {
+            while (pos &lt; source.length()) nextToken();
+            closeAllIndents();
+            if (!tokens.isEmpty()) {
+                TT last = tokens.get(tokens.size() - 1).type();
+                if (last != TT.NEWLINE &amp;&amp; last != TT.DEDENT)
+                    tokens.add(new Token(TT.NEWLINE, &#34;\n&#34;, line, col));
+            }
+            tokens.add(new Token(TT.EOF, null, line, col));
+            return tokens;
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">dispatch on the current character</span>
+        <span class="ref">python_interpreter_java/Main.java:184–206</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void nextToken() {
+            if (atLineStart &amp;&amp; parenDepth == 0) { handleIndentation(); return; }
+
+            char ch = cur();
+            if (ch == &#39; &#39; || ch == &#39;\t&#39; || ch == &#39;\r&#39;) { advance(); return; }
+            if (ch == &#39;\n&#39;) {
+                int ln = line, cl = col;
+                advance();
+                if (parenDepth == 0) {
+                    tokens.add(new Token(TT.NEWLINE, &#34;\n&#34;, ln, cl));
+                    atLineStart = true;
+                }
+                return;
+            }
+            if (ch == &#39;#&#39;) {
+                while (cur() != &#39;\n&#39; &amp;&amp; cur() != &#39;\0&#39;) advance();
+                return;
+            }
+            if (ch == &#39;&#34;&#39; || ch == &#39;\&#39;&#39;) { readString(); return; }
+            if (Character.isDigit(ch)) { readNumber(); return; }
+            if (Character.isLetter(ch) || ch == &#39;_&#39;) { readName(); return; }
+            readOperator();
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>A token remembers its <b>type</b>, its <b>value</b> and <b>where it came from</b> (line and column). Error messages need that position later.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the token</span>
+        <span class="ref">python_interpreter_java/Main.java:115–120</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    record Token(TT type, Object value, int line, int col) {
+        @Override
+        public String toString() {
+            return &#34;Token(&#34; + type.name() + &#34;, &#34; + pyRepr(value) + &#34;, &#34; + line + &#34;:&#34; + col + &#34;)&#34;;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+<h3>INDENT and DEDENT</h3><p>Think of nested boxes: every box you open, you must close. INDENT opens a box, DEDENT closes one.</p><p>Python has no braces, so blocks come from leading whitespace. At the start of every line the lexer counts the spaces and compares the count with the top of a stack, <code>indent_stack</code>, which starts as <code>[0]</code>:</p><ul><li>more spaces than the top: push the new width and emit <code>INDENT</code></li><li>fewer spaces: pop and emit one <code>DEDENT</code> per popped level</li><li>after popping, the width must equal the new top, otherwise <code>IndentationError</code></li><li>blank lines and comment-only lines are skipped and never touch the stack.</li></ul><p>At the end of the file, every level still open gets a DEDENT. That is why INDENT and DEDENT always balance.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">handling indentation</span>
+        <span class="ref">python_interpreter_java/Main.java:209–239</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void handleIndentation() {
+            int indent = 0;
+            while (cur() == &#39; &#39; || cur() == &#39;\t&#39;) {
+                indent = cur() == &#39;\t&#39; ? (indent / 8 + 1) * 8 : indent + 1;
+                advance();
+            }
+            if (pos &gt;= source.length()) return;
+
+            char ch = cur();
+            // blank or comment-only line: skip entirely (also handles CRLF)
+            if (ch == &#39;\n&#39; || ch == &#39;\r&#39; || ch == &#39;#&#39;) {
+                if (ch == &#39;#&#39;) while (cur() != &#39;\n&#39; &amp;&amp; cur() != &#39;\0&#39;) advance();
+                if (cur() == &#39;\r&#39;) advance();
+                if (cur() == &#39;\n&#39;) advance();
+                return;
+            }
+
+            atLineStart = false;
+            int current = indentStack.get(indentStack.size() - 1);
+            if (indent &gt; current) {
+                indentStack.add(indent);
+                tokens.add(new Token(TT.INDENT, indent, line, 1));
+            } else if (indent &lt; current) {
+                while (indentStack.size() &gt; 1 &amp;&amp; indentStack.get(indentStack.size() - 1) &gt; indent) {
+                    indentStack.remove(indentStack.size() - 1);
+                    tokens.add(new Token(TT.DEDENT, indent, line, 1));
+                }
+                if (indentStack.get(indentStack.size() - 1) != indent)
+                    throw err(&#34;IndentationError: unindent does not match any outer indentation level&#34;);
+            }
+        }
+</code></pre>
+</figure>
+
+
+
+
+<h3>Program A as tokens</h3><p>44 tokens, straight from <code>Lexer(source).tokenize()</code>:</p><details class='predict'><summary>Guess first: how many INDENT and how many DEDENT tokens does Program A have?</summary><p><b>2 of each.</b> One INDENT for the body of <code>fib_rec</code> and one for the body of <code>if</code>. Both close again, so there are 2 DEDENTs.</p></details>
+
+
+
+<details><summary>Show all 44 tokens</summary><div class='tablewrap'><table>
+<tr><th>#</th><th>type</th><th>value</th><th>line:col</th></tr>
+<tr><td>0</td><td><code>DEF</code></td><td><code>'def'</code></td><td>1:1</td></tr>
+<tr><td>1</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>1:5</td></tr>
+<tr><td>2</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>1:12</td></tr>
+<tr><td>3</td><td><code>NAME</code></td><td><code>'n'</code></td><td>1:13</td></tr>
+<tr><td>4</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>1:14</td></tr>
+<tr><td>5</td><td><code>COLON</code></td><td><code>':'</code></td><td>1:15</td></tr>
+<tr><td>6</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>1:16</td></tr>
+<tr><td>7</td><td><code>INDENT</code></td><td><code>4</code></td><td>2:1</td></tr>
+<tr><td>8</td><td><code>IF</code></td><td><code>'if'</code></td><td>2:5</td></tr>
+<tr><td>9</td><td><code>NAME</code></td><td><code>'n'</code></td><td>2:8</td></tr>
+<tr><td>10</td><td><code>LESSEQUAL</code></td><td><code>'&lt;='</code></td><td>2:10</td></tr>
+<tr><td>11</td><td><code>INTEGER</code></td><td><code>1</code></td><td>2:13</td></tr>
+<tr><td>12</td><td><code>COLON</code></td><td><code>':'</code></td><td>2:14</td></tr>
+<tr><td>13</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>2:15</td></tr>
+<tr><td>14</td><td><code>INDENT</code></td><td><code>8</code></td><td>3:1</td></tr>
+<tr><td>15</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>3:9</td></tr>
+<tr><td>16</td><td><code>NAME</code></td><td><code>'n'</code></td><td>3:16</td></tr>
+<tr><td>17</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>3:17</td></tr>
+<tr><td>18</td><td><code>DEDENT</code></td><td><code>4</code></td><td>4:1</td></tr>
+<tr><td>19</td><td><code>RETURN</code></td><td><code>'return'</code></td><td>4:5</td></tr>
+<tr><td>20</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:12</td></tr>
+<tr><td>21</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:19</td></tr>
+<tr><td>22</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:20</td></tr>
+<tr><td>23</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:22</td></tr>
+<tr><td>24</td><td><code>INTEGER</code></td><td><code>1</code></td><td>4:24</td></tr>
+<tr><td>25</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:25</td></tr>
+<tr><td>26</td><td><code>PLUS</code></td><td><code>'+'</code></td><td>4:27</td></tr>
+<tr><td>27</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>4:29</td></tr>
+<tr><td>28</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>4:36</td></tr>
+<tr><td>29</td><td><code>NAME</code></td><td><code>'n'</code></td><td>4:37</td></tr>
+<tr><td>30</td><td><code>MINUS</code></td><td><code>'-'</code></td><td>4:39</td></tr>
+<tr><td>31</td><td><code>INTEGER</code></td><td><code>2</code></td><td>4:41</td></tr>
+<tr><td>32</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>4:42</td></tr>
+<tr><td>33</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>4:43</td></tr>
+<tr><td>34</td><td><code>DEDENT</code></td><td><code>0</code></td><td>6:1</td></tr>
+<tr><td>35</td><td><code>NAME</code></td><td><code>'print'</code></td><td>6:1</td></tr>
+<tr><td>36</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:6</td></tr>
+<tr><td>37</td><td><code>NAME</code></td><td><code>'fib_rec'</code></td><td>6:7</td></tr>
+<tr><td>38</td><td><code>LPAREN</code></td><td><code>'('</code></td><td>6:14</td></tr>
+<tr><td>39</td><td><code>INTEGER</code></td><td><code>4</code></td><td>6:15</td></tr>
+<tr><td>40</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:16</td></tr>
+<tr><td>41</td><td><code>RPAREN</code></td><td><code>')'</code></td><td>6:17</td></tr>
+<tr><td>42</td><td><code>NEWLINE</code></td><td><code>'\n'</code></td><td>6:18</td></tr>
+<tr><td>43</td><td><code>EOF</code></td><td><code>None</code></td><td>7:1</td></tr>
+</table></div></details>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tokens_a.gif" alt="Program A token by token" loading="lazy"
+         data-dark="/Map/static/gif/dark/tokens_a.gif"
+         data-light="/Map/static/gif/light/tokens_a.gif">
+    <figcaption>Program A token by token · <a href="/Map/static/video/dark/tokens_a.mp4"
+         data-dark="/Map/static/video/dark/tokens_a.mp4"
+         data-light="/Map/static/video/light/tokens_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/indent_b.gif" alt="INDENT and DEDENT in Program B" loading="lazy"
+         data-dark="/Map/static/gif/dark/indent_b.gif"
+         data-light="/Map/static/gif/light/indent_b.gif">
+    <figcaption>INDENT and DEDENT in Program B · <a href="/Map/static/video/dark/indent_b.mp4"
+         data-dark="/Map/static/video/dark/indent_b.mp4"
+         data-light="/Map/static/video/light/indent_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add <code>!=</code> to your tokenizer.</p>
+                <p><b>Break it:</b> indent one line with a tab and the next with spaces. What happens?</p>
+                <p><b>What you have now:</b> Your interpreter can read words. It can't understand sentences yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="parser">
+            <h2>3 · Grammar: do the words form a sentence?</h2>
+            <p class="term">Parser (syntax analysis, PEG)</p>
+            <p class="chmeta">~45 min · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p>Each rule returns a record such as <code>Compare</code>; <code>expect</code> throws <code>ParseError</code>.</p>
+            </aside>
+            
+
+            
+
+<p>Think of a grammar teacher diagramming a sentence: subject here, verb there. The parser does the same with your tokens. It checks that they fit the grammar and draws the structure.</p><p>The parser checks that the tokens form a valid program and builds the tree. MAP's grammar written as a <b>PEG</b> (Parsing Expression Grammar):</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">MAP grammar (subset of the EBNF comment in main.py:656)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext">program     &lt;- stmt* EOF
+stmt        &lt;- func_def / if_stmt / for_stmt / simple_stmt
+simple_stmt &lt;- (return_stmt / assign / expr_stmt) NEWLINE
+assign      &lt;- NAME &#39;=&#39; expr
+func_def    &lt;- &#39;def&#39; NAME &#39;(&#39; params? &#39;)&#39; &#39;:&#39; block
+if_stmt     &lt;- &#39;if&#39; expr &#39;:&#39; block (&#39;else&#39; &#39;:&#39; block)?
+for_stmt    &lt;- &#39;for&#39; NAME &#39;in&#39; expr &#39;:&#39; block
+block       &lt;- NEWLINE INDENT stmt+ DEDENT
+expr        &lt;- comparison
+comparison  &lt;- sum ((&#39;&lt;=&#39; / &#39;&lt;&#39; / &#39;==&#39;) sum)*
+sum         &lt;- primary ((&#39;+&#39; / &#39;-&#39;) primary)*
+primary     &lt;- atom (&#39;(&#39; args? &#39;)&#39;)*
+atom        &lt;- NAME / INT / &#39;True&#39; / &#39;False&#39; / &#39;None&#39; / &#39;(&#39; expr &#39;)&#39;
+</code></pre>
+</figure>
+
+
+
+
+<p>How to read it: <code>e1 e2</code> is a sequence, <code>e*</code> is "zero or more" (a while loop), <code>e?</code> is optional, and <code>e1 / e2</code> is an <b>ordered choice</b>. The parser tries <code>e1</code> first and only tries <code>e2</code> if <code>e1</code> fails. There is never any ambiguity, because the first alternative that succeeds wins.</p><div class='deepdive'><h3>Optional deep dive: Backtracking</h3><p>You can skip this part. None of the six interpreters backtracks, but it explains what "PEG" means.</p><p>When an alternative fails halfway, the parser must <b>rewind</b>. Before trying an alternative it saves the cursor position, and on failure it restores it:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">ordered choice by hand (the technique from peg.txt)</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def parse_simple_stmt(self):
+    save = self.pos
+    node = self.parse_assign()        # NAME &#39;=&#39; expr
+    if node is not None:
+        return node
+    self.pos = save                   # BACKTRACK: undo what assign consumed
+    return self.parse_expr_stmt()</code></pre>
+</figure>
+
+
+
+
+<p>Example: on <code>print(fib_rec(4))</code>, <code>assign</code> matches <code>NAME print</code>, then needs <code>'='</code> but finds <code>'('</code>. It fails, the cursor goes back to 0, and <code>expr_stmt</code> parses the whole line.</p><h3>Packrat memoization</h3><p>Backtracking can make the parser repeat work, for example in <code>comparison &lt;- sum '&lt;=' sum / sum</code>. Both alternatives start by parsing <code>sum</code> at the same position. A <b>packrat</b> parser keeps a memo table <code>(rule, position) → (node, end position)</code>, so each rule runs at most once per position and parsing stays linear:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">packrat in a few lines</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def memo(rule):
+    def wrapper(self):
+        key = (rule.__name__, self.pos)
+        if key in self.memo:
+            node, self.pos = self.memo[key]     # hit: jump straight to the end
+            return node
+        node = rule(self)
+        self.memo[key] = (node, self.pos)
+        return node
+    return wrapper</code></pre>
+</figure>
+
+
+
+
+</div><aside class='history'><h3>History corner · Before PEG: CPython's LL(1) parser</h3><p>Picture Python 3.8. You type <code>f() = 1</code>. The parser looks at it and says: fine! Only a later stage notices the problem and complains: "can't assign to function call". Why did the parser let it through? Because of how it was built.</p><p>For almost 30 years CPython did not use a PEG. Until Python 3.8 its parser was generated by <b>pgen</b> from the file <code>Grammar/Grammar</code>, and it was an <b>LL(1)</b> parser:</p><ul><li><b>L</b>: it reads the tokens from <b>L</b>eft to right;</li><li><b>L</b>: it builds the <b>L</b>eftmost derivation (it always expands the leftmost rule first, top-down);</li><li><b>(1)</b>: it decides with exactly <b>1</b> token of lookahead.</li></ul><p>An LL(1) parser is table-driven and never backtracks. It keeps a stack of rules still to match, and a table maps <code>(rule on top of the stack, next token)</code> to exactly one production. If the cell is empty, the program is a SyntaxError.</p><p>That power has limits. The grammar cannot be left-recursive, and every choice must be decidable from one token. So some rules were written too loosely and repaired later: <code>f() = 1</code> parsed as a valid statement and was only rejected while building the AST ("can't assign to function call"). Parenthesised <code>with</code> statements and <code>match</code> could not be expressed at all. <b>PEP 617</b> replaced it with the PEG parser in <b>Python 3.9</b> (the old one was still available with <code>-X oldparser</code>), and the LL(1) parser was removed in <b>3.10</b>.</p><p>MAP's parser sits close to the old one: it is hand-written recursive descent that decides with one token, or two at <code>NAME '='</code> (LL(2)). That is why it never needs the PEG backtracking explained above.</p>
+
+
+
+<div class="videos">
+<figure class="video">
+    <img src="/Map/static/gif/dark/ll1.gif" alt="LL(1) table-driven parsing of id + id" loading="lazy"
+         data-dark="/Map/static/gif/dark/ll1.gif"
+         data-light="/Map/static/gif/light/ll1.gif">
+    <figcaption>LL(1) table-driven parsing of id + id · <a href="/Map/static/video/dark/ll1.mp4"
+         data-dark="/Map/static/video/dark/ll1.mp4"
+         data-light="/Map/static/video/light/ll1.mp4">open video</a></figcaption>
+</figure>
+</div>
+
+
+
+</aside><h3>What the interpreters actually do</h3><p>All six interpreters call their parser "PEG-style", but they <b>never need to rewind</b>. Each ordered choice is decided by <b>peeking</b> one or two tokens ahead. That works because MAP's alternatives start with different tokens (<code>def</code>, <code>if</code>, <code>for</code>), or can be told apart by the second token (<code>NAME '='</code>). The result is the same tree, built without backtracking or memoization.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">statements: ordered choice decided by lookahead</span>
+        <span class="ref">python_interpreter_java/Main.java:482–489, 492–511</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Node stmt() {
+            skipNewlines();
+            if (match(TT.DEF)) return funcDef();
+            if (match(TT.IF)) return ifStmt();
+            if (match(TT.WHILE)) return whileStmt();
+            if (match(TT.FOR)) return forStmt();
+            return simpleStmt();
+        }
+
+        private Node simpleStmt() {
+            Node node;
+            if (check(TT.RETURN)) {
+                advance();
+                node = returnStmt();
+            } else if (check(TT.NAME) &amp;&amp; peek(1).type() == TT.EQUAL) {
+                node = assign();
+            } else if (check(TT.NAME) &amp;&amp; (peek(1).type() == TT.PLUSEQUAL || peek(1).type() == TT.MINEQUAL
+                    || peek(1).type() == TT.STAREQUAL || peek(1).type() == TT.SLASHEQUAL)) {
+                node = augAssign();
+            } else {
+                Node e = expr();
+                node = new ExprStmt(e, cur().line());
+            }
+
+            if (check(TT.NEWLINE)) advance();
+            else if (!check(TT.EOF, TT.DEDENT))
+                throw err(&#34;expected newline after statement, got &#34; + pyRepr(cur().type().text));
+            return node;
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>Each grammar rule is one function that <b>returns an AST node</b>. Precedence comes from which rule calls which: <code>comparison</code> calls <code>sum</code>, so <code>+</code> binds tighter than <code>&lt;=</code>.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">comparison and sum build Compare / BinOp nodes</span>
+        <span class="ref">python_interpreter_java/Main.java:631–639, 641–649</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Node comparison() {
+            Node node = sum();
+            while (check(TT.EQEQUAL, TT.NOTEQUAL, TT.LESS, TT.LESSEQUAL, TT.GREATER, TT.GREATEREQUAL)) {
+                String op = advance().type().text;
+                Node right = sum();
+                node = new Compare(node, op, right, node.line());
+            }
+            return node;
+        }
+
+        private Node sum() {
+            Node node = term();
+            while (check(TT.PLUS, TT.MINUS)) {
+                String op = advance().type().text;
+                Node right = term();
+                node = new BinOp(node, op, right, node.line());
+            }
+            return node;
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">how a SyntaxError is raised</span>
+        <span class="ref">python_interpreter_java/Main.java:450–459, 461–461</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Token expect(TT tt, String msg) {
+            if (!check(tt)) {
+                Token got = cur();
+                String desc = msg.isEmpty()
+                        ? &#34;expected &#39;&#34; + tt.text + &#34;&#39;, got &#39;&#34; + got.type().text + &#34;&#39; (&#34; + pyRepr(got.value()) + &#34;)&#34;
+                        : msg;
+                throw new ParseError(&#34;SyntaxError: &#34; + desc, got.line());
+            }
+            return advance();
+        }
+
+        private ParseError err(String msg) { return new ParseError(&#34;SyntaxError: &#34; + msg, cur().line()); }
+</code></pre>
+</figure>
+
+
+
+
+<h3>Invalid programs</h3><p>Each program below was run through the real lexer and parser. The message is exactly what <code>main.py</code> prints, and "stops at" is the token the parser was looking at when it gave up.</p>
+
+
+
+<div class="errgrid">
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_colon.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1
+        return n
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;:&#39; after if-condition [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;:&#39;</p></details>
+        <p class="where">Stops at: line 2, column 14</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_unclosed_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">print(fib_rec(4)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;)&#39; after arguments [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: &#39;(&#39; was never closed</p></details>
+        <p class="where">Stops at: line 2, column 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_def_no_paren.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec n:
+    return n
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected &#39;(&#39; after function name [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: expected &#39;(&#39;</p></details>
+        <p class="where">Stops at: line 1, column 13</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_double_equal.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">a = = 1
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;=&#39; (&#39;=&#39;) [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1, column 5</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_missing_indent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">if True:
+print(1)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: expected indented block [line 2]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: IndentationError: expected an indented block after &#39;if&#39; statement on line 1</p></details>
+        <p class="where">Stops at: line 2, column 1</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/parse_dangling_op.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">n = 1 +
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: ParseError: SyntaxError: unexpected token &#39;NEWLINE&#39; (&#39;\n&#39;) [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1, column 8</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_dedent.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return n
+  return fib_rec(n - 1) + fib_rec(n - 2)
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: IndentationError: unindent does not match any outer indentation level</p></details>
+        <p class="where">Stops at: line 4</p>
+    </div>
+    
+    <div class="errcase">
+        
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/lex_bad_char.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">x = 1 $ 2
+</code></pre>
+</figure>
+
+        <p class="errmsg">MAP: LexerError: SyntaxError: unexpected character &#39;$&#39; [line 1]</p>
+        <details class="predict"><summary>Guess CPython&#39;s message, then click</summary><p class="cpy">CPython 3.14: SyntaxError: invalid syntax</p></details>
+        <p class="where">Stops at: line 1</p>
+    </div>
+    
+</div>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/backtracking.gif" alt="Ordered choice and backtracking" loading="lazy"
+         data-dark="/Map/static/gif/dark/backtracking.gif"
+         data-light="/Map/static/gif/light/backtracking.gif">
+    <figcaption>Ordered choice and backtracking · <a href="/Map/static/video/dark/backtracking.mp4"
+         data-dark="/Map/static/video/dark/backtracking.mp4"
+         data-light="/Map/static/video/light/backtracking.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/packrat.gif" alt="Packrat memoization" loading="lazy"
+         data-dark="/Map/static/gif/dark/packrat.gif"
+         data-light="/Map/static/gif/light/packrat.gif">
+    <figcaption>Packrat memoization · <a href="/Map/static/video/dark/packrat.mp4"
+         data-dark="/Map/static/video/dark/packrat.mp4"
+         data-light="/Map/static/video/light/packrat.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/recursive_descent.gif" alt="Recursive descent in main.py" loading="lazy"
+         data-dark="/Map/static/gif/dark/recursive_descent.gif"
+         data-light="/Map/static/gif/light/recursive_descent.gif">
+    <figcaption>Recursive descent in main.py · <a href="/Map/static/video/dark/recursive_descent.mp4"
+         data-dark="/Map/static/video/dark/recursive_descent.mp4"
+         data-light="/Map/static/video/light/recursive_descent.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add <code>!=</code> next to <code>==</code> in your <code>comparison</code> rule.</p>
+                <p><b>Break it:</b> delete the colon after an <code>if</code>. Does your message match the one above?</p>
+                <p><b>What you have now:</b> Your interpreter knows when a sentence is grammatical. It doesn't know what it means yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="ast">
+            <h2>4 · The skeleton: your program as a tree</h2>
+            <p class="term">AST and tree walk</p>
+            <p class="chmeta">~20 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>sealed interface Node</code> + records; a pattern-matching <code>switch</code> must handle every case.</p>
+            </aside>
+            
+
+            
+
+<p>Take a sentence and remove the punctuation. What is left is the skeleton: who does what to whom. The AST is the skeleton of your program.</p><p>The <b>Abstract Syntax Tree</b> keeps only what matters for running the program. There are no parentheses, colons or indentation; those exist only to shape the tree. Every node is a small class:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">base class and root</span>
+        <span class="ref">python_interpreter_java/Main.java:360–365</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    sealed interface Node {
+        int line();
+    }
+
+    // Root
+    record Program(List&lt;Node&gt; body, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">expression nodes</span>
+        <span class="ref">python_interpreter_java/Main.java:374–383</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    // Expressions
+    record Name(String id, int line) implements Node {}
+    record ListLiteral(List&lt;Node&gt; elts, int line) implements Node {}
+    record Subscript(Node value, Node index, int line) implements Node {}
+    record BinOp(Node left, String op, Node right, int line) implements Node {}
+    record UnaryOp(String op, Node operand, int line) implements Node {}
+    record Compare(Node left, String op, Node right, int line) implements Node {}
+    record BoolOp(String op, List&lt;Node&gt; values, int line) implements Node {}
+    record Call(Node func, List&lt;Node&gt; args, int line) implements Node {}
+    record MethodCall(Node obj, String method, List&lt;Node&gt; args, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">statement nodes</span>
+        <span class="ref">python_interpreter_java/Main.java:385–393</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    // Statements
+    record Assign(String target, Node value, int line) implements Node {}
+    record AugAssign(String target, String op, Node value, int line) implements Node {}
+    record ExprStmt(Node expr, int line) implements Node {}
+    record Return(Node value, int line) implements Node {}
+    record If(Node test, List&lt;Node&gt; body, List&lt;Node&gt; orelse, int line) implements Node {}
+    record While(Node test, List&lt;Node&gt; body, int line) implements Node {}
+    record For(String target, Node iter, List&lt;Node&gt; body, int line) implements Node {}
+    record FuncDef(String name, List&lt;String&gt; params, List&lt;Node&gt; body, int line) implements Node {}
+</code></pre>
+</figure>
+
+
+
+
+<p><b>Composite pattern.</b> A node can contain other nodes (a <code>FuncDef</code> has a <code>body</code>, a <code>BinOp</code> has <code>left</code>/<code>right</code>), and code treats a single node and a whole subtree the same way. <code>Name</code> and the literals are the leaves.</p><details class='predict'><summary>Before you scroll: sketch the tree for <code>fib_rec(n - 1) + fib_rec(n - 2)</code>.</summary><p>A <code>BinOp '+'</code> with two children. Each child is a <code>Call</code> to <code>Name('fib_rec')</code> whose argument is a <code>BinOp '-'</code> of <code>Name('n')</code> and an <code>IntLiteral</code>. Find it in the tree for A below.</p></details><h3>The trees for A and B</h3><p>This is what <code>python3 main.py --ast</code> prints:</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program A</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_rec&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Return
+      BinOp op=&#39;+&#39;
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+        Call
+          Name(&#39;fib_rec&#39;)
+          BinOp op=&#39;-&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(2)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_rec&#39;)
+        IntLiteral(4)
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Program B</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">Program [line 1]
+  FuncDef name=&#39;fib_iter&#39; params=[&#39;n&#39;]
+    If
+      test:
+        Compare op=&#39;&lt;=&#39;
+          Name(&#39;n&#39;)
+          IntLiteral(1)
+      body:
+        Return
+          Name(&#39;n&#39;)
+    Assign target=&#39;a&#39;
+      IntLiteral(0)
+    Assign target=&#39;b&#39;
+      IntLiteral(1)
+    For target=&#39;i&#39;
+      iter:
+        Call
+          Name(&#39;range&#39;)
+          IntLiteral(2)
+          BinOp op=&#39;+&#39;
+            Name(&#39;n&#39;)
+            IntLiteral(1)
+      body:
+        Assign target=&#39;temp&#39;
+          BinOp op=&#39;+&#39;
+            Name(&#39;a&#39;)
+            Name(&#39;b&#39;)
+        Assign target=&#39;a&#39;
+          Name(&#39;b&#39;)
+        Assign target=&#39;b&#39;
+          Name(&#39;temp&#39;)
+    Return
+      Name(&#39;b&#39;)
+  ExprStmt
+    Call
+      Name(&#39;print&#39;)
+      Call
+        Name(&#39;fib_iter&#39;)
+        IntLiteral(6)
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<h3>Walking the tree: Visitor</h3><p>To do something with every node (print it, check it, run it) you need code per node type. The <b>Visitor pattern</b> keeps that code out of the node classes: a visitor has one function per node type, and a dispatcher picks the right one:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the dispatcher: pick the handler for the node&#39;s type</span>
+        <span class="ref">python_interpreter_java/Main.java:1134–1141</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private void execStmts(List&lt;Node&gt; stmts, Environment env) {
+            for (Node s : stmts) exec(s, env);
+        }
+
+        private void exec(Node node, Environment env) {
+            switch (node) {
+                case FuncDef n -&gt; env.set(n.name(), new PyFunction(n, env));
+                case Assign n -&gt; env.set(n.target(), eval(n.value(), env));
+</code></pre>
+</figure>
+
+
+
+
+<p>A node's handler visits its children by calling the dispatcher again, which gives a depth-first walk. The evaluator itself is the <b>Interpreter pattern</b>: each grammar construct has a class, and evaluating the tree means asking each node to evaluate itself.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/tree_a.gif" alt="Program A: tree construction" loading="lazy"
+         data-dark="/Map/static/gif/dark/tree_a.gif"
+         data-light="/Map/static/gif/light/tree_a.gif">
+    <figcaption>Program A: tree construction · <a href="/Map/static/video/dark/tree_a.mp4"
+         data-dark="/Map/static/video/dark/tree_a.mp4"
+         data-light="/Map/static/video/light/tree_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/walk_a.gif" alt="Program A: depth-first walk" loading="lazy"
+         data-dark="/Map/static/gif/dark/walk_a.gif"
+         data-light="/Map/static/gif/light/walk_a.gif">
+    <figcaption>Program A: depth-first walk · <a href="/Map/static/video/dark/walk_a.mp4"
+         data-dark="/Map/static/video/dark/walk_a.mp4"
+         data-light="/Map/static/video/light/walk_a.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> print your tree for Program B and compare it with the one above.</p>
+                <p><b>Break it:</b> remove the handler for one node type. What does your dispatcher do when it meets that node?</p>
+                <p><b>What you have now:</b> Your program is a tree you can walk. Nothing runs yet.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="semantic">
+            <h2>5 · Meaning: what does each name refer to?</h2>
+            <p class="term">Semantic analysis</p>
+            <p class="chmeta">~15 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p>No semantic pass; a top-level <code>return</code> is turned into a SyntaxError at runtime by <code>Interpreter.run</code>. Java's twist: <code>None</code> is <code>null</code>, so lookup needs <code>containsKey</code> instead of <code>get</code>.</p>
+            </aside>
+            
+
+            
+
+<details class='predict'><summary>What does this print?<pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></summary><p>Most people guess <b>1</b>. CPython raises <code>UnboundLocalError</code>, and MAP prints 1. This chapter explains why.</p></details><p>Think of an environment as a sticky note. It lists some names and their values, and points to the note behind it. To find a name, you read your note first, then the one behind, and so on.</p><p>A program can be grammatically correct and still be wrong. <b>Semantic analysis</b> is a pass over the AST, after parsing and before running, that works out what names mean and rejects what can be rejected early.</p><h3>Scope resolution: local or global?</h3><p>Python's rule: <b>a name that is assigned anywhere in a function body is local to the whole function.</b> Parameters are local too. Any other name is looked up in the global scope, then in the builtins. For Program B:</p><div class='tablewrap'><table><tr><th>scope</th><th>name</th><th>kind</th></tr><tr><td><code>global</code></td><td><code>print</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>range</code></td><td>builtin</td></tr><tr><td><code>global</code></td><td><code>fib_iter</code></td><td>global (function)</td></tr><tr><td><code>fib_iter</code></td><td><code>n</code></td><td>local (parameter)</td></tr><tr><td><code>fib_iter</code></td><td><code>a</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>b</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>i</code></td><td>local</td></tr><tr><td><code>fib_iter</code></td><td><code>temp</code></td><td>local</td></tr></table></div><p>In Program A, <code>fib_rec</code> is used inside its own body but never assigned there, so it is <b>global</b>. That is how recursion finds the function. The table above is computed from the real AST by <code>capture.scope_table</code>; MAP itself has no semantic pass.</p><h3>Errors found before running vs at runtime</h3><div class='tablewrap'><table><tr><th>program</th><th>CPython 3.14</th><th>MAP</th></tr><tr><td><pre>return 5</pre></td><td>SyntaxError: 'return' outside function</td><td>InternalError: 5</td></tr><tr><td><pre>def f(n, n):
+    return n
+
+print(f(1, 2))</pre></td><td>SyntaxError: duplicate argument 'n' in function definition</td><td>2</td></tr><tr><td><pre>x = 1
+def f():
+    print(x)
+    x = 2
+
+f()</pre></td><td>UnboundLocalError: cannot access local variable 'x' where it is not associated with a value</td><td>1</td></tr><tr><td><pre>def f():
+    return g()
+
+def g():
+    return 1
+
+print(f())</pre></td><td>1</td><td>1</td></tr></table></div><ul><li><code>'return' outside function</code> and <code>duplicate argument</code> are caught by CPython's compiler <b>before any code runs</b>. None of the six interpreters has a full semantic pass. MAP runs the first program anyway: the return signal escapes to the top and is reported as an InternalError. It silently accepts the duplicate parameter.</li><li><code>UnboundLocalError</code>: CPython decided at compile time that <code>x</code> is local in <code>f</code> (it is assigned on line 4), so reading it on line 3 fails. MAP has no such pass. Its environment lookup walks up to the global <code>x</code> and prints 1, which is a known difference.</li><li><b>NameError cannot be detected early.</b> In the last program, <code>f</code> mentions <code>g</code> before <code>g</code> exists. By the time <code>f()</code> runs, <code>g</code> has been defined. Whether a global name exists depends on what has executed so far (definitions can be conditional), so the check must happen during the lookup itself.</li></ul>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">Environment: where NameError is raised (at runtime)</span>
+        <span class="ref">python_interpreter_java/Main.java:756–778</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final class Environment {
+        final Map&lt;String, Object&gt; vars = new HashMap&lt;&gt;(); // containsKey needed: None is null
+        final Environment parent;
+
+        Environment(Environment parent) { this.parent = parent; }
+
+        Object get(String name, int line) {
+            for (Environment e = this; e != null; e = e.parent)
+                if (e.vars.containsKey(name)) return e.vars.get(name);
+            throw rt(&#34;NameError: name &#39;&#34; + name + &#34;&#39; is not defined&#34;, line);
+        }
+
+        /** Always sets in the current scope. */
+        void set(String name, Object value) { vars.put(name, value); }
+
+        /** Assign to the nearest scope that already owns name; else current scope. */
+        void assign(String name, Object value) {
+            for (Environment e = this; e != null; e = e.parent) {
+                if (e.vars.containsKey(name)) { e.vars.put(name, value); return; }
+            }
+            vars.put(name, value);
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/scope.gif" alt="Scope resolution" loading="lazy"
+         data-dark="/Map/static/gif/dark/scope.gif"
+         data-light="/Map/static/gif/light/scope.gif">
+    <figcaption>Scope resolution · <a href="/Map/static/video/dark/scope.mp4"
+         data-dark="/Map/static/video/dark/scope.mp4"
+         data-light="/Map/static/video/light/scope.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> write a function that lists the local names of a function: its parameters plus every name assigned in its body.</p>
+                <p><b>Break it:</b> run the <code>x = 1</code> program from the top of this chapter. Does your interpreter print 1 like MAP, or fail like CPython?</p>
+                <p><b>What you have now:</b> You know where every name lives. Next, we give them values.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="memory">
+            <h2>6 · Bringing it to life: frames, calls, return</h2>
+            <p class="term">Evaluation and memory</p>
+            <p class="chmeta">~30 min · ★★★</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>ReturnSignal</code> is a RuntimeException without a stack trace, so it is cheap.</p>
+            </aside>
+            
+
+            
+
+<p>Two images help here. The call stack is a stack of plates: each call puts a plate on top, and each return takes it off. A <code>return</code> is an emergency exit: it skips every room between you and the door.</p><p>The evaluator walks the AST and does what each node says. While it runs, memory has two parts, the same ones Python Tutor draws:</p><ul><li><b>Frames</b> (left in the videos): one <code>Environment</code> per active call, mapping names to values. The global frame is created first.</li><li><b>Objects</b> (right): values that variables refer to, such as function objects. Small ints are shown inline.</li></ul><h3>Calling a function</h3><ol><li>Evaluate the callee and the arguments.</li><li>Create a <b>new Environment whose parent is the function's closure</b> (the global frame for MAP's top-level functions).</li><li>Bind each parameter to its argument.</li><li>Execute the body. <code>return</code> sends a return signal with the value, which unwinds out of nested <code>if</code>/<code>for</code> blocks to the call.</li><li>Catch it, discard the frame, and hand the value back.</li></ol>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">evaluating a Call</span>
+        <span class="ref">python_interpreter_java/Main.java:1279–1310</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        private Object evalCall(Call n, Environment env) {
+            Object callee = eval(n.func(), env);
+            List&lt;Object&gt; args = new ArrayList&lt;&gt;();
+            for (Node a : n.args()) args.add(eval(a, env));
+
+            if (callee instanceof Builtin b) {
+                try {
+                    return b.fn().apply(args);
+                } catch (PyRuntimeError e) {
+                    // attach the call-site line to builtin errors that have none
+                    if (e.line == 0) throw new PyRuntimeError(e.msg, n.line());
+                    throw e;
+                }
+            }
+
+            if (callee instanceof PyFunction f) {
+                FuncDef fn = f.node;
+                if (args.size() != fn.params().size())
+                    throw rt(&#34;TypeError: &#34; + fn.name() + &#34;() takes &#34; + fn.params().size()
+                            + &#34; argument(s) but &#34; + args.size() + &#34; given&#34;, n.line());
+                Environment callEnv = new Environment(f.closure);
+                for (int i = 0; i &lt; args.size(); i++) callEnv.set(fn.params().get(i), args.get(i));
+                try {
+                    execStmts(fn.body(), callEnv);
+                } catch (ReturnSignal ret) {
+                    return ret.value;
+                }
+                return null;
+            }
+
+            throw rt(&#34;TypeError: &#39;&#34; + typeName(callee) + &#34;&#39; object is not callable&#34;, n.line());
+        }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the return signal</span>
+        <span class="ref">python_interpreter_java/Main.java:67–74</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final class ReturnSignal extends RuntimeException {
+        final Object value;
+
+        ReturnSignal(Object value) {
+            super(null, null, false, false); // no stack trace: cheap to throw
+            this.value = value;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">return, if and for</span>
+        <span class="ref">python_interpreter_java/Main.java:1148–1172</span>
+    </figcaption>
+    
+    <pre><code class="language-java">                case Return n -&gt; throw new ReturnSignal(n.value() != null ? eval(n.value(), env) : null);
+                case If n -&gt; {
+                    if (epBool(eval(n.test(), env))) execStmts(n.body(), env);
+                    else if (!n.orelse().isEmpty()) execStmts(n.orelse(), env);
+                }
+                case While n -&gt; {
+                    while (epBool(eval(n.test(), env))) execStmts(n.body(), env);
+                }
+                case For n -&gt; {
+                    Object it = eval(n.iter(), env);
+                    if (it instanceof String s) {
+                        for (String ch : codePoints(s)) {
+                            env.set(n.target(), ch);
+                            execStmts(n.body(), env);
+                        }
+                    } else if (it instanceof List&lt;?&gt;) {
+                        List&lt;Object&gt; lst = asList(it);
+                        for (int i = 0; i &lt; lst.size(); i++) { // live iteration, like Python
+                            env.set(n.target(), lst.get(i));
+                            execStmts(n.body(), env);
+                        }
+                    } else {
+                        throw rt(&#34;TypeError: &#39;&#34; + typeName(it) + &#34;&#39; object is not iterable&#34;, n.line());
+                    }
+                }
+</code></pre>
+</figure>
+
+
+
+
+<details class='predict'><summary>Guess first: how deep will the stack get for <code>fib_rec(4)</code>? Then watch the videos below.</summary><p>The <b>call stack</b> is the chain of active frames. In MAP it is not a separate data structure: every call is a call in the host language, so the host's own stack holds it. Program A reaches a depth of 4 frames (<code>fib_rec(4)</code> down to <code>fib_rec(1)</code>, plus global).</p></details><p>The videos show one step per executed line, recorded by an <code>Interpreter</code> subclass in <code>capture.py</code> that only watches; the evaluation is main.py's own. Program A takes 39 steps and Program B takes 25. Just before <code>fib_iter(6)</code> returns, its frame is <code>{"n": "6", "a": "5", "b": "8", "i": "6", "temp": "8"}</code> and the return value is <b>8</b>.</p><p>In the videos, watch the stack grow, then collapse back to 3.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/environments.gif" alt="Environments and calls" loading="lazy"
+         data-dark="/Map/static/gif/dark/environments.gif"
+         data-light="/Map/static/gif/light/environments.gif">
+    <figcaption>Environments and calls · <a href="/Map/static/video/dark/environments.mp4"
+         data-dark="/Map/static/video/dark/environments.mp4"
+         data-light="/Map/static/video/light/environments.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_a.gif" alt="Program A step by step (memory view)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_a.gif"
+         data-light="/Map/static/gif/light/memory_a.gif">
+    <figcaption>Program A step by step (memory view) · <a href="/Map/static/video/dark/memory_a.mp4"
+         data-dark="/Map/static/video/dark/memory_a.mp4"
+         data-light="/Map/static/video/light/memory_a.mp4">open video</a></figcaption>
+</figure>
+
+<figure class="video">
+    <img src="/Map/static/gif/dark/memory_b.gif" alt="Program B step by step (memory view)" loading="lazy"
+         data-dark="/Map/static/gif/dark/memory_b.gif"
+         data-light="/Map/static/gif/light/memory_b.gif">
+    <figcaption>Program B step by step (memory view) · <a href="/Map/static/video/dark/memory_b.mp4"
+         data-dark="/Map/static/video/dark/memory_b.mp4"
+         data-light="/Map/static/video/light/memory_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> run Programs A and B. They must print 3 and 8.</p>
+                <p><b>Break it:</b> forget to catch the return signal in your Call handler. What happens to the first <code>return</code>?</p>
+                <p><b>What you have now:</b> Your interpreter runs real programs. Program A prints 3.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="errors">
+            <h2>7 · The error museum</h2>
+            <p class="term">Errors</p>
+            <p class="chmeta">~20 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>PyError extends RuntimeException</code> plus subclasses. Why does Java raise RecursionError while Rust crashes? The JVM throws <code>StackOverflowError</code>, and the interpreter catches it.</p>
+            </aside>
+            
+
+            
+
+<p>Welcome to the error museum. Every exhibit here is a program that went wrong, and every stage has its own way of saying no.</p><p>Every stage can reject a program, and each one raises its own error class. All of them derive from one base class carrying a message and a line:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the error classes</span>
+        <span class="ref">python_interpreter_java/Main.java:24–64</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static class PyError extends RuntimeException {
+        final String msg;
+        final int line;
+
+        PyError(String message, int line) {
+            super(message);
+            this.msg = message;
+            this.line = line;
+        }
+
+        private String loc() {
+            return line &gt; 0 ? &#34; [line &#34; + line + &#34;]&#34; : &#34;&#34;;
+        }
+
+        String plain() {
+            return getClass().getSimpleName() + &#34;: &#34; + msg + loc();
+        }
+
+        @Override
+        public String toString() {
+            return &#34;\033[91m&#34; + getClass().getSimpleName() + &#34;\033[0m: &#34; + msg + loc();
+        }
+    }
+
+    /** Illegal character or unterminated literal. */
+    static class LexerError extends PyError {
+        LexerError(String m, int line) { super(m, line); }
+    }
+
+    /** Token stream violates the grammar. */
+    static class ParseError extends PyError {
+        ParseError(String m, int line) { super(m, line); }
+    }
+
+    /** Type error, undefined name, wrong arity, etc. */
+    static class PyRuntimeError extends PyError {
+        PyRuntimeError(String m, int line) { super(m, line); }
+    }
+
+    static PyRuntimeError rt(String msg) { return new PyRuntimeError(msg, 0); }
+    static PyRuntimeError rt(String msg, int line) { return new PyRuntimeError(msg, line); }
+</code></pre>
+</figure>
+
+
+
+
+<div class='tablewrap'><table><tr><th>stage</th><th>error</th><th>raised in main.py</th><th>real message</th></tr><tr><td>lexer</td><td><code>IndentationError</code></td><td><code>Lexer._handle_indentation</code></td><td><code>LexerError: IndentationError: unindent does not match any outer indentation level [line 4]</code></td></tr><tr><td>lexer</td><td><code>SyntaxError</code></td><td><code>Lexer._read_operator</code></td><td><code>LexerError: SyntaxError: unexpected character '$' [line 1]</code></td></tr><tr><td>parser</td><td><code>SyntaxError</code></td><td><code>Parser._expect / Parser._err</code></td><td><code>ParseError: SyntaxError: expected ':' after if-condition [line 2]</code></td></tr><tr><td>semantic</td><td><code>'return' outside function</code></td><td><code>(no pass) → InternalError</code></td><td><code>InternalError: 5</code></td></tr><tr><td>runtime</td><td><code>NameError</code></td><td><code>Environment.get</code></td><td><code>PyRuntimeError: NameError: name 'fib_rec' is not defined [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (operands)</code></td><td><code>Interpreter._apply_binop</code></td><td><code>PyRuntimeError: TypeError: unsupported operand type(s) for '+': 'int' and 'NoneType' [line 1]</code></td></tr><tr><td>runtime</td><td><code>TypeError (arity)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: f() takes 1 argument(s) but 2 given [line 4]</code></td></tr><tr><td>runtime</td><td><code>TypeError (not callable)</code></td><td><code>Interpreter._eval_Call</code></td><td><code>PyRuntimeError: TypeError: 'int' object is not callable [line 2]</code></td></tr><tr><td>runtime</td><td><code>RecursionError</code></td><td><code>host Python stack → main()'s except Exception</code></td><td><code>InternalError: maximum recursion depth exceeded</code></td></tr><tr><td>runtime</td><td><code>ZeroDivisionError</code></td><td><code>Interpreter._apply_binop</code></td><td>cannot happen in MAP: there is no <code>/</code>, <code>//</code> or <code>%</code></td></tr></table></div><p><b>How an error is reported.</b> A runtime error raised deep inside a recursion passes through every call (none of them catches it) until <code>main()</code> catches it and prints <code>Kind: message [line N]</code>:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">main(): the single place that reports errors</span>
+        <span class="ref">python_interpreter_java/Main.java:1637–1671</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static int realMain(String[] args) {
+        try {
+            if (args.length == 0) {
+                repl();
+                return 0;
+            }
+
+            boolean showAst = Arrays.asList(args).contains(&#34;--ast&#34;);
+            List&lt;String&gt; files = new ArrayList&lt;&gt;();
+            for (String a : args) if (!a.startsWith(&#34;--&#34;)) files.add(a);
+
+            if (files.isEmpty()) {
+                System.out.println(&#34;Usage: java Py.java [script] [--ast]&#34;);
+                return 1;
+            }
+
+            String filepath = files.get(0);
+            Path path = Path.of(filepath);
+            if (!Files.exists(path)) {
+                System.out.println(&#34;\033[91mFileNotFoundError\033[0m: No such file: &#34; + pyRepr(filepath));
+                return 1;
+            }
+
+            String source = Files.readString(path, StandardCharsets.UTF_8);
+            if (showAst) runSourceWithAst(source);
+            else runSource(source, null);
+            return 0;
+        } catch (PyError e) {
+            System.out.println(e);
+            return 1;
+        } catch (Exception e) {
+            System.out.println(&#34;\033[91mInternalError\033[0m: &#34; + e);
+            return 1;
+        }
+    }
+</code></pre>
+</figure>
+
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">examples/errors/rt_name_error_deep.py</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-python">def fib_rec(n):
+    if n &lt;= 1:
+        return m
+    return fib_rec(n - 1) + fib_rec(n - 2)
+
+print(fib_rec(4))
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">MAP output</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">PyRuntimeError: NameError: name &#39;m&#39; is not defined [line 3]
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<p><b>Line and column.</b> Every token stores <code>line</code> and <code>col</code>, but the error reports only the line, and the column is lost. Reporting columns means passing the token's column into the error and printing the source line with a <code>^</code> under it, as CPython does:</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">CPython 3.14, last line of the traceback</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">NameError: name &#39;m&#39; is not defined</code></pre>
+</figure>
+
+
+
+
+<p><b>RecursionError.</b> MAP does not count calls. A runaway recursion exhausts the <i>host</i> Python's stack, and <code>main()</code> reports that as <code>InternalError</code>. Java catches <code>StackOverflowError</code>, the llvm port counts calls up to <code>MAX_DEPTH = 4000</code>, and Rust, C++ and Clojure simply crash. A faithful version keeps a depth counter in the call and raises at 1000, as CPython does.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/error_stack.gif" alt="An error travels up the call stack" loading="lazy"
+         data-dark="/Map/static/gif/dark/error_stack.gif"
+         data-light="/Map/static/gif/light/error_stack.gif">
+    <figcaption>An error travels up the call stack · <a href="/Map/static/video/dark/error_stack.mp4"
+         data-dark="/Map/static/video/dark/error_stack.mp4"
+         data-light="/Map/static/video/light/error_stack.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> call a function with the wrong number of arguments and check that the line number is right.</p>
+                <p><b>Break it:</b> remove the base case from <code>fib_rec</code>. Who stops it: your interpreter or the host?</p>
+                <p><b>What you have now:</b> Your interpreter fails politely, with a kind and a line.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="builtins">
+            <h2>8 · Crossing the border: print and range</h2>
+            <p class="term">Builtins</p>
+            <p class="chmeta">~15 min · ★☆☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p><code>reg(name, lambda)</code> into a <code>LinkedHashMap</code>; this range checks for step 0.</p>
+            </aside>
+            
+
+            
+
+<p>Think of power outlets. Your MAP program plugs into them, and the electricity comes from the host language.</p><p>A builtin is a function written in the <b>host language</b> rather than in MAP. MAP needs two of them, <code>print</code> and <code>range</code>. Each interpreter defines 14 and registers all of them the same way: as ordinary values in the global Environment.</p>
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">print</span>
+        <span class="ref">python_interpreter_java/Main.java:970–975</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        reg(&#34;print&#34;, a -&gt; {
+            StringJoiner sj = new StringJoiner(&#34; &#34;);
+            for (Object x : a) sj.add(epStr(x));
+            System.out.println(sj);
+            return null;
+        });
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">range — returns an eager list</span>
+        <span class="ref">python_interpreter_java/Main.java:985–1000</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        reg(&#34;range&#34;, a -&gt; {
+            if (a.isEmpty() || a.size() &gt; 3) throw rt(&#34;TypeError: range() takes 1-3 arguments&#34;);
+            long[] n = new long[a.size()];
+            for (int i = 0; i &lt; n.length; i++) {
+                if (!isNum(a.get(i))) throw rt(&#34;TypeError: range() arguments must be integers&#34;);
+                n[i] = toLong(a.get(i));
+            }
+            long start = 0, stop, step = 1;
+            if (n.length == 1) stop = n[0];
+            else { start = n[0]; stop = n[1]; if (n.length == 3) step = n[2]; }
+            if (step == 0) throw rt(&#34;ValueError: range() arg 3 must not be zero&#34;);
+            List&lt;Object&gt; out = new ArrayList&lt;&gt;();
+            if (step &gt; 0) for (long i = start; i &lt; stop; i += step) out.add(i);
+            else for (long i = start; i &gt; stop; i += step) out.add(i);
+            return out;
+        });
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">the registry</span>
+        <span class="ref">python_interpreter_java/Main.java:961–963</span>
+    </figcaption>
+    
+    <pre><code class="language-java">    static final Map&lt;String, Builtin&gt; BUILTINS = new LinkedHashMap&lt;&gt;();
+
+    static void reg(String name, Fn fn) { BUILTINS.put(name, new Builtin(name, fn)); }
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">seeded into the global scope when the interpreter starts</span>
+        <span class="ref">python_interpreter_java/Main.java:1113–1115</span>
+    </figcaption>
+    
+    <pre><code class="language-java">        Interpreter() {
+            for (Map.Entry&lt;String, Builtin&gt; e : BUILTINS.entrySet()) globals.set(e.getKey(), e.getValue());
+        }
+</code></pre>
+</figure>
+
+
+
+
+<p>When a <code>Call</code> node runs, the callee is looked up like any variable. If the value is a host callable rather than a MAP function, it is called directly with the list of evaluated arguments. That is the point where MAP code crosses into native code. Python Tutor hides builtins in its frames, and so do the videos.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/native.gif" alt="Crossing into native code" loading="lazy"
+         data-dark="/Map/static/gif/dark/native.gif"
+         data-light="/Map/static/gif/light/native.gif">
+    <figcaption>Crossing into native code · <a href="/Map/static/video/dark/native.mp4"
+         data-dark="/Map/static/video/dark/native.mp4"
+         data-light="/Map/static/video/light/native.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+            <aside class="checkpoint">
+                <p><b>Try it:</b> add a third builtin, like <code>abs</code> or <code>max</code>.</p>
+                <p><b>Break it:</b> write <code>print = 1</code>, then call <code>print(2)</code>. Which error do you get?</p>
+                <p><b>What you have now:</b> That's the whole pipeline. You have written a Python.</p>
+            </aside>
+            
+        </section>
+        
+        <section class="chapter" id="bytecode">
+            <h2>9 · Bonus: real CPython bytecode</h2>
+            
+            <p class="chmeta">~15 min · ★★☆</p>
+
+            
+            <aside class="porting">
+                <h4>Language spotlight: Java</h4>
+                <p>A tree-walker: <code>if</code> and <code>for</code> are Java statements inside the pattern <code>switch</code>.</p>
+            </aside>
+            
+
+            
+
+<p>CPython does not walk the tree. It compiles each function into <b>bytecode</b>, a flat list of instructions for a stack machine, and control flow becomes <b>jumps</b>. Below is <code>dis.dis</code> for both functions, run with <b>Python 3.14</b>. Bytecode is an implementation detail: it differs between Python versions, so on 3.12 or 3.13 you will see other instruction names.</p>
+
+
+
+<div class="twocol">
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_rec — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP               10 (-)
+              CALL                     1
+              LOAD_GLOBAL              1 (fib_rec + NULL)
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           2
+              BINARY_OP               10 (-)
+              CALL                     1
+              BINARY_OP                0 (+)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+
+
+
+<figure class="code">
+    <figcaption>
+        <span class="ctitle">fib_iter — python3.14 -m dis</span>
+        
+    </figcaption>
+    
+    <pre><code class="language-plaintext out">  1           RESUME                   0
+
+  2           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              COMPARE_OP              58 (bool(&lt;=))
+              POP_JUMP_IF_FALSE        3 (to L1)
+              NOT_TAKEN
+
+  3           LOAD_FAST_BORROW         0 (n)
+              RETURN_VALUE
+
+  4   L1:     LOAD_SMALL_INT           0
+              STORE_FAST               1 (a)
+
+  5           LOAD_SMALL_INT           1
+              STORE_FAST               2 (b)
+
+  6           LOAD_GLOBAL              1 (range + NULL)
+              LOAD_SMALL_INT           2
+              LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP                0 (+)
+              CALL                     2
+              GET_ITER
+      L2:     FOR_ITER                15 (to L3)
+              STORE_FAST               3 (i)
+
+  7           LOAD_FAST_BORROW_LOAD_FAST_BORROW 18 (a, b)
+              BINARY_OP                0 (+)
+              STORE_FAST               4 (temp)
+
+  8           LOAD_FAST                2 (b)
+              STORE_FAST               1 (a)
+
+  9           LOAD_FAST                4 (temp)
+              STORE_FAST               2 (b)
+              JUMP_BACKWARD           17 (to L2)
+
+  6   L3:     END_FOR
+              POP_ITER
+
+ 10           LOAD_FAST_BORROW         2 (b)
+              RETURN_VALUE
+</code></pre>
+</figure>
+
+
+</div>
+
+
+
+<ul><li><code>if n &lt;= 1:</code> becomes <code>COMPARE_OP</code> followed by <code>POP_JUMP_IF_FALSE … (to L1)</code>, which skips the <code>return n</code> when the test is false.</li><li><code>for</code> becomes <code>GET_ITER</code>, then <code>FOR_ITER (to L3)</code> at the top of the loop (it leaves when the iterator is exhausted) and <code>JUMP_BACKWARD (to L2)</code> at the bottom.</li></ul><h3>Tree-walkers use no jumps</h3><p>A tree-walker never needs jumps: an <code>If</code> node is executed by a host <code>if</code>, and a <code>For</code> node by a host <code>for</code>. The structure of the tree <i>is</i> the control flow. Only a compiler needs jumps — like CPython, and like the LLVM port.</p><p>You already saw <code>if</code> and <code>for</code> in the selected interpreter in <a href='#memory'>chapter 6</a>.</p>
+
+
+
+            
+            <h3>Animation</h3>
+            <div class="videos">
+                
+<figure class="video">
+    <img src="/Map/static/gif/dark/bytecode_b.gif" alt="CPython bytecode for Program B" loading="lazy"
+         data-dark="/Map/static/gif/dark/bytecode_b.gif"
+         data-light="/Map/static/gif/light/bytecode_b.gif">
+    <figcaption>CPython bytecode for Program B · <a href="/Map/static/video/dark/bytecode_b.mp4"
+         data-dark="/Map/static/video/dark/bytecode_b.mp4"
+         data-light="/Map/static/video/light/bytecode_b.mp4">open video</a></figcaption>
+</figure>
+
+            </div>
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="out_of_scope">
+            <h2>10 · Expansion packs</h2>
+            <p class="term">Out of scope</p>
+            
+
+            
+
+            
+
+<p>Think of what follows as expansion packs, ready for you to build.</p><p>This tutorial covers the language core only. MAP has <b>no</b> standard library, no <code>import</code> or modules, no classes or objects, and no operating-system APIs (files, sockets, processes, environment). It also leaves out <code>while</code>, <code>try/except</code>, strings, lists, floats and <code>/ // %</code>. Most of these exist in the six full ports and are left out of MAP on purpose. Each one is a new token, a new grammar rule, a new node, and a new evaluation function, built with exactly the same steps as above.</p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+        <section class="chapter" id="your_turn">
+            <h2>11 · Your turn: build your own Python</h2>
+            
+            
+
+            
+
+            
+
+<p>You have seen every piece. Now build it yourself. Pick a host language: one of the six, or one that is not here yet (Go, C#, Haskell, JavaScript, Zig …). Then go through the tutorial in order, one stage at a time:</p><ol class='checklist'><li><a href='#tokenizer'>Tokenizer</a>: a scanner loop and an indent stack that emits INDENT and DEDENT.</li><li><a href='#parser'>Parser</a>: one recursive-descent function per grammar rule, deciding with one or two tokens of lookahead.</li><li><a href='#ast'>AST</a>: one node type per construct, and a dispatcher that picks the handler for each node.</li><li><a href='#semantic'>Environments</a>: <code>{vars, parent}</code>, with lookup walking up the parent chain.</li><li><a href='#memory'>Calls and return</a>: a new environment per call, and a return signal that unwinds to the call.</li><li><a href='#errors'>Errors</a>: one class per stage, each carrying a line number, reported in one place.</li><li><a href='#builtins'>Builtins</a>: <code>print</code> and <code>range</code> as host functions stored in the global environment.</li></ol><h3>Final check</h3><ul><li>Program A prints <b>3</b> and Program B prints <b>8</b>.</li><li>The programs in <code>tutorial/examples/errors/</code> fail with the messages from chapters 3 and 7.</li></ul><p>Stuck? Switch the <b>Programming language</b> selector at the top: every stage is shown in six real interpreters, so you can compare your code with a working one. When MAP runs, keep going with the features from chapter 10: <code>while</code>, strings, lists, floats. Each one is a new token, a grammar rule, a node and an evaluation function — exactly the steps you already know.</p><p><b>Happy hacking, and welcome to the club of people who have written their own Python.</b></p>
+
+
+
+            
+
+            
+
+            
+        </section>
+        
+    </div>
+</div>
+
+<section class="recap" id="recap">
+    <h2>The whole path</h2>
+    <figure class="teaser">
+        <video id="recap-video" controls playsinline preload="metadata"
+               aria-label="The full interpreter, chapter by chapter: from source code to output"
+               data-dark="/Map/static/video/dark/InterpreterTutorial.mp4"
+               data-light="/Map/static/video/light/InterpreterTutorial.mp4"></video>
+        <figcaption>The full interpreter, chapter by chapter: from source code to output</figcaption>
+    </figure>
+</section>
+
+    </main>
+
+    <footer>
+        <hr>
+        <p>© 2026 Make a Python</p>
+    </footer>
+</body>
+</html>
